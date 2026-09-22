@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nacre">
+  <meta name="description" content="Éveillez un océan vivant, une pulsation à la fois.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Nacre — Océan vivant</title>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <span class="eyebrow" id="era-label">ÈRE I · ÉTINCELLE</span>
+        <h1>Nacre</h1>
+      </div>
+      <button class="icon-button" id="settings-button" aria-label="Ouvrir les réglages">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Zm7-3.4 1.8-1.4-1.7-2.9-2.2.9a8 8 0 0 0-1.5-.9L15.1 5h-3.3l-.4 2.7a8 8 0 0 0-1.5.9l-2.2-.9L6 10.6 7.8 12a8 8 0 0 0 0 1.8L6 15.2 7.7 18l2.2-.9a8 8 0 0 0 1.5.9l.4 2.7H15l.4-2.7a8 8 0 0 0 1.5-.9l2.2.9 1.7-2.9-1.8-1.4a8 8 0 0 0 0-1.8Z"/></svg>
+      </button>
+    </header>
+
+    <section class="resource-strip" aria-live="polite">
+      <div><span class="resource-value" id="lumen-display">0</span><span class="resource-unit"> lueurs</span></div>
+      <div class="rate"><span class="live-dot"></span><span id="rate-display">0 / seconde</span></div>
+    </section>
+
+    <div class="views">
+      <section class="view active" id="view-source" data-view="source">
+        <div class="horizon">
+          <div class="progress-copy"><span id="next-label">Première luciole</span><strong id="next-value">10</strong></div>
+          <div class="progress-track"><i id="era-progress"></i></div>
+        </div>
+
+        <div class="source-stage" id="source-stage">
+          <div class="orbit-ring" aria-hidden="true"><i></i><i></i><i></i></div>
+          <button id="pulse-button" class="pearl" aria-label="Faire pulser la cellule pour produire de la lueur">
+            <span class="pearl-core"></span><span class="pearl-shine"></span>
+          </button>
+          <p class="tap-label"><strong id="tap-value">+1</strong> par pulsation</p>
+          <div class="resonance-wrap">
+            <span id="resonance-label">Résonance 0%</span>
+            <div class="resonance-track"><i id="resonance-bar"></i></div>
+          </div>
+        </div>
+
+        <article class="focus-card" id="focus-card">
+          <div class="focus-icon" aria-hidden="true">✦</div>
+          <div><span class="eyebrow">PROCHAINE ÉVOLUTION</span><h2 id="focus-title">Attirer une luciole</h2><p id="focus-copy">Elle entretiendra la lumière pendant votre absence.</p></div>
+          <button class="primary-buy" id="focus-action"><span id="focus-cost">10</span><small>lueurs</small></button>
+        </article>
+      </section>
+
+      <section class="view" id="view-life" data-view="life" hidden>
+        <div class="section-heading"><div><span class="eyebrow">VOTRE ÉCOSYSTÈME</span><h2>Vie lumineuse</h2></div><div class="buy-modes" role="group" aria-label="Quantité d’achat"><button class="active" data-buy-mode="1">×1</button><button data-buy-mode="10">×10</button><button data-buy-mode="max">Max</button></div></div>
+        <div class="generator-list" id="generator-list"></div>
+      </section>
+
+      <section class="view" id="view-reef" data-view="reef" hidden>
+        <div class="section-heading"><div><span class="eyebrow">ÉQUILIBRE DU MONDE</span><h2>Récif</h2></div></div>
+        <div id="reef-content" class="locked-panel"></div>
+      </section>
+
+      <section class="view" id="view-evolution" data-view="evolution" hidden>
+        <div class="section-heading"><div><span class="eyebrow">MÉMOIRE VIVANTE</span><h2>Évolution</h2></div></div>
+        <div id="evolution-content"></div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <button class="active" data-tab="source"><span class="nav-icon">◉</span><span>Source</span></button>
+    <button data-tab="life"><span class="nav-icon">⌁</span><span>Vie</span></button>
+    <button data-tab="reef"><span class="nav-icon">◇</span><span>Récif</span><i class="nav-lock" id="reef-lock"></i></button>
+    <button data-tab="evolution"><span class="nav-icon">✦</span><span>Évolution</span></button>
+  </nav>
+
+  <div class="toast-region" id="toast-region" aria-live="polite"></div>
+  <dialog id="settings-dialog">
+    <form method="dialog" class="sheet">
+      <div class="sheet-handle"></div><div class="sheet-head"><div><span class="eyebrow">NACRE</span><h2>Réglages</h2></div><button class="icon-button" value="close" aria-label="Fermer">×</button></div>
+      <label class="setting-row"><span><strong>Animations</strong><small>Ondes et particules</small></span><input type="checkbox" id="motion-toggle" checked></label>
+      <label class="setting-row"><span><strong>Vibrations</strong><small>Retour tactile discret</small></span><input type="checkbox" id="haptics-toggle" checked></label>
+      <button type="button" class="secondary-button" id="export-button">Exporter la sauvegarde</button>
+      <button type="button" class="secondary-button" id="import-button">Importer une sauvegarde</button>
+      <button type="button" class="danger-button" id="reset-button">Recommencer cette partie</button>
+      <p class="version">Nacre 1.0 · Sauvegarde locale automatique</p>
+    </form>
+  </dialog>
+  <dialog id="offline-dialog"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2>L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
+  <script src="game.js" defer></script>
+</body>
+</html>
