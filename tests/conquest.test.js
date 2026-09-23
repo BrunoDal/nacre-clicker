@@ -8,11 +8,27 @@ const game = fs.readFileSync(path.join(__dirname, '..', 'game.js'), 'utf8');
 const logic = game.slice(0, game.indexOf("$('#pulse-button').onpointerdown"));
 
 function session() {
+  const elements = new Map();
+  const element = (selector) => {
+    if (!elements.has(selector)) elements.set(selector, {
+      textContent: '', hidden: false, dataset: {}, open: false, shown: false,
+      classList: { add: () => {}, remove: () => {}, toggle: () => {} },
+      replaceChildren(...children) { this.children = children; },
+      addEventListener() {}, showModal() { this.open = true; this.shown = true; }, close() { this.open = false; },
+      setAttribute() {}, querySelector() { return element(`${selector} child`); },
+      querySelectorAll() { return []; },
+    });
+    return elements.get(selector);
+  };
   const context = vm.createContext({
     localStorage: { getItem: () => null },
     performance: { now: () => 0 },
     navigator: {},
-    document: { querySelector: () => ({ classList: { add: () => {}, remove: () => {} } }) },
+    document: {
+      querySelector: (selector) => selector === 'dialog[open]' ? null : element(selector),
+      querySelectorAll: () => [],
+      createElement: () => ({ textContent: '' }),
+    },
     matchMedia: () => ({ matches: false }),
     scrollTo: () => {},
     setTimeout: () => {},
@@ -62,11 +78,17 @@ test('safe claims cannot fail and old saves remain valid', () => {
   assert.equal(run('sanitise({schemaVersion:2,lumen:10}).territories.length'), 0);
 });
 
-test('expedition failure keeps claimed territory and starts cooldown', () => {
+test('patrol is free and a failed raid only loses its two-percent stake', () => {
   const run = session();
-  run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"]');
+  run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"];state.expeditionZone="cove"');
+  assert.equal(run('expeditionTerms("patrol").stake'), 0);
+  assert.equal(run('launchExpedition("patrol",()=>.99)'), true);
+  assert.equal(run('state.lumen'), 1000);
+  assert.equal(run('state.expeditionProgress.cove'), 1);
+  run('state.nextExpeditionAt=0');
+  assert.equal(run('expeditionTerms("raid").stake'), 20);
   assert.equal(run('launchExpedition("raid",()=>.99)'), true);
-  assert.equal(run('state.lumen'), 950);
+  assert.equal(run('state.lumen'), 980);
   assert.equal(run('state.territories.length'), 1);
   assert.equal(run('launchExpedition("raid",()=>0)'), false);
   assert.equal(run('state.nextExpeditionAt>Date.now()'), true);
@@ -95,22 +117,70 @@ test('expedition destination can be changed only to a claimed territory', () => 
   assert.equal(run('state.conquestLog.at(-1).zoneId'), 'cove');
 });
 
-test('two expedition outings unlock one permanent discovery even when both fail', () => {
+test('successful raid discovers immediately while a patrol supplies a free first outing', () => {
   const run = session();
   run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"];state.expeditionZone="cove"');
   const before = run('globalMult()');
-  assert.equal(run('launchExpedition("raid",()=>.99)'), true);
+  assert.equal(run('launchExpedition("patrol",()=>.99)'), true);
   assert.equal(run('state.expeditionProgress.cove'), 1);
   assert.equal(run('state.expeditionFinds.includes("cove")'), false);
   run('state.nextExpeditionAt=0');
-  assert.equal(run('launchExpedition("raid",()=>.99)'), true);
+  assert.equal(run('launchExpedition("raid",()=>0)'), true);
   assert.equal(run('state.expeditionProgress.cove'), 2);
+  assert.equal(run('expeditionTerms("raid").payout'), 42);
+  assert.equal(run('expeditionTerms("raid").payout-expeditionTerms("raid").stake'), 22);
   assert.equal(run('state.expeditionFinds.filter(id=>id==="cove").length'), 1);
+  assert.equal(run('state.lumen'), 1022);
   assert.equal(run('globalMult()'), before * 1.04);
   run('state.nextExpeditionAt=0');
-  run('launchExpedition("patrol",()=>.99)');
+  assert.equal(run('launchExpedition("patrol",()=>.99)'), false);
   assert.equal(run('state.expeditionProgress.cove'), 2);
   assert.equal(run('state.expeditionFinds.length'), 1);
+});
+
+test('allocation effects describe the real light multiplier and intuition/vitality production', () => {
+  const run = session();
+  run('state.runLifetime=25000;state.territories=["cove","lagoon"];state.generators.firefly=100;state.allocation={light:70,insight:20,vitality:10};state.vitality=99');
+  const effects = run('allocationEffects()');
+  assert.equal(effects.light, 1.45);
+  assert.equal(effects.insight > 0, true);
+  assert.equal(effects.vitality > 0, true);
+  assert.equal(effects.vitalityBonus, 16);
+  run('economy(10)');
+  assert.ok(Math.abs(run('state.insight') - effects.insight * 10) < 1e-9);
+  assert.ok(Math.abs(run('state.vitality') - 99 - effects.vitality * 10) < 1e-9);
+  const beforeLightFocus = run('rate()');
+  run('setAllocation("light",100)');
+  const lightFocused = run('allocationEffects()');
+  assert.ok(lightFocused.light > effects.light);
+  assert.ok(Math.abs(run('rate()') / beforeLightFocus - lightFocused.light / effects.light) < 1e-9);
+  assert.equal(lightFocused.insight, 0);
+  assert.equal(lightFocused.vitality, 0);
+});
+
+test('lagoon specialties apply once and slider help separates currents from tools', () => {
+  const run = session();
+  run('state.runLifetime=25000;state.territories=["cove","lagoon"];state.generators.firefly=100;state.industry.filter=1;state.industry.garden=1;state.territoryPaths.lagoon="amber"');
+  const flows = run('allocationEffects()');
+  assert.equal(flows.insightFromTools, .72);
+  assert.ok(Math.abs(flows.insight - flows.insightFromCurrent - .72) < 1e-9);
+  assert.equal(flows.vitalityFromTools, .3);
+  run('state.territoryPaths.lagoon="garden"');
+  const fertile = run('allocationEffects()');
+  assert.equal(fertile.insightFromTools, .6);
+  assert.equal(fertile.vitalityFromTools, .36);
+  assert.ok(Math.abs(fertile.vitality - fertile.vitalityFromCurrent - .36) < 1e-9);
+});
+
+test('crossing an era opens a readable unlock announcement in the mocked dialog', () => {
+  const run = session();
+  run('state.runLifetime=25000;state.lumen=1;state.territories=["cove","lagoon"];economy(1)');
+  assert.equal(run('knownEra'), 1);
+  assert.equal(run('pendingEraAnnouncement'), 0);
+  assert.equal(run('activeEraDestination'), 'reef');
+  assert.equal(run("document.querySelector('#era-dialog').shown"), true);
+  assert.equal(run("document.querySelector('#era-dialog-title').textContent"), 'Les Colonies s’éveillent');
+  assert.equal(run("document.querySelector('#era-dialog-unlocks').children.length"), 3);
 });
 
 test('legacy saves migrate safely to specialties, expedition, heritage, and resonance fields', () => {

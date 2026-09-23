@@ -85,3 +85,38 @@ body[data-era="0"] .pearl:active,body[data-era="0"] .pearl.pulsing{transform:sca
 body[data-era="3"]{--cyan:#d1a8ff;background:radial-gradient(circle at 50% 28%,#322548 0,#171d36 34%,#06111f 72%)}
 body[data-era="3"] .pearl{transform:scale(1.2);box-shadow:0 0 48px rgba(209,168,255,.76),0 0 150px rgba(119,220,255,.3),inset -15px -18px 32px rgba(3,19,35,.5)}
 body[data-era="3"] .pearl:active,body[data-era="3"] .pearl.pulsing{transform:scale(1.12)}
+
+/* Guide and concise, in-context explanations for the game's changing systems. */
+.topbar-actions{display:flex;align-items:center;gap:9px}
+.guide-button{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border:1px solid rgba(89,225,255,.28);border-radius:999px;background:rgba(89,225,255,.09);color:var(--cyan);font-size:.82rem;font-weight:800;cursor:pointer}
+.guide-button>span:first-child{display:grid;place-items:center;width:20px;height:20px;border:1px solid currentColor;border-radius:50%;font-size:.76rem}
+.guide-button:focus-visible,.icon-button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.guide-sheet{top:0;bottom:auto;height:100%;overflow-y:auto;overscroll-behavior:contain;border-radius:0;padding-top:calc(18px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + var(--safe-bottom))}
+.guide-sheet .sheet-head{margin-bottom:10px}
+.guide-intro{margin:0 0 14px;padding:13px 14px;border:1px solid rgba(89,225,255,.16);border-radius:15px;background:rgba(89,225,255,.055);color:#d4edf5;font-size:.85rem;line-height:1.5}
+.guide-content{display:grid;gap:10px}
+.guide-section{padding:13px 14px;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.025)}
+.guide-section h3{margin:0 0 7px;color:var(--ink);font-size:.9rem}
+.guide-section p,.guide-section li{margin:0;color:#a9c0ce;font-size:.77rem;line-height:1.48}
+.guide-section p+p{margin-top:8px}
+.guide-section strong{color:#e9faff}
+.guide-section ul{display:grid;gap:5px;margin:8px 0;padding-left:19px}
+.guide-resources{display:grid;gap:7px;margin:0}
+.guide-resources>div{display:grid;grid-template-columns:82px minmax(0,1fr);gap:8px;align-items:start;padding-top:7px;border-top:1px solid rgba(143,220,239,.09)}
+.guide-resources dt{color:var(--cyan);font-size:.75rem;font-weight:800}
+.guide-resources dd{margin:0;color:#a9c0ce;font-size:.74rem;line-height:1.4}
+.guide-done{margin-top:12px;flex:0 0 auto}
+.allocation-impact{margin:8px 0;padding:9px 11px;border-radius:11px;background:rgba(89,225,255,.055);color:#b8d2df;font-size:.74rem;line-height:1.4}
+.allocation-impact strong{color:var(--ink)}
+.era-announcement{margin:0 0 12px;padding:15px 16px;border:1px solid rgba(89,225,255,.28);border-radius:17px;background:linear-gradient(120deg,rgba(89,225,255,.12),rgba(168,139,255,.1));box-shadow:0 10px 30px rgba(0,0,0,.16);animation:milestone-arrive .4s ease both}
+.era-announcement h2{margin:4px 0;font-size:1.08rem}
+.era-announcement p{margin:0;color:#bdd3df;font-size:.8rem;line-height:1.45}
+.era-sheet{max-height:92dvh;overflow-y:auto;padding-top:24px}
+.era-sheet h2{margin:7px 0 10px;color:var(--ink);font-size:1.35rem}
+.era-sheet p{color:#bfd4df;font-size:.88rem;line-height:1.5}
+.era-sheet ul{display:grid;gap:10px;margin:18px 0;padding:0;list-style:none}
+.era-sheet li{padding:11px 13px;border:1px solid rgba(89,225,255,.16);border-radius:12px;background:rgba(89,225,255,.05);color:#d3eaf2;font-size:.81rem;line-height:1.42}
+.expedition-value{margin:7px 0 0;padding:8px 10px;border-radius:10px;background:rgba(117,246,196,.06);color:#c4ddd6;font-size:.73rem;line-height:1.4}
+.expedition-value strong{color:var(--mint)}
+@media(max-width:390px){.guide-button{padding:0 10px}.guide-sheet{padding-left:14px;padding-right:14px}.guide-resources>div{grid-template-columns:74px minmax(0,1fr)}}
+@media(max-width:480px){.expedition-card .choice-grid{grid-template-columns:1fr}.expedition-card .choice-button{min-height:0}}
