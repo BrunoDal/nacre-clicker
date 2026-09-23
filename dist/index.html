@@ -7,19 +7,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Nacre">
-  <meta name="description" content="Éveillez un océan vivant, une pulsation à la fois.">
+  <meta name="description" content="Faites grandir une colonie de lumière, conquérez les océans et osez des expéditions à risque.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
-  <title>Nacre — Océan vivant</title>
+  <title>Nacre — Conquête des océans</title>
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
   <main class="app-shell">
     <header class="topbar">
       <div class="brand-block">
-        <span class="eyebrow" id="era-label">ÈRE I · ÉTINCELLE</span>
+        <span class="eyebrow" id="era-label">ÈRE I · NOYAU</span>
         <h1>Nacre</h1>
       </div>
       <button class="icon-button" id="settings-button" aria-label="Ouvrir les réglages">
@@ -56,6 +56,10 @@
           <div><span class="eyebrow">PROCHAINE ÉVOLUTION</span><h2 id="focus-title">Attirer une luciole</h2><p id="focus-copy">Elle entretiendra la lumière pendant votre absence.</p></div>
           <button class="primary-buy" id="focus-action"><span id="focus-cost">10</span><small>lueurs</small></button>
         </article>
+        <article class="frontier-card" id="frontier-card">
+          <div><span class="eyebrow">PROCHAINE FRONTIÈRE</span><h2 id="frontier-title">Anse des lucioles</h2><p id="frontier-copy">0 territoire conquis sur 6</p></div>
+          <button id="frontier-action" aria-label="Voir les territoires à conquérir">Explorer <span aria-hidden="true">→</span></button>
+        </article>
       </section>
 
       <section class="view" id="view-life" data-view="life" hidden>
@@ -64,12 +68,13 @@
       </section>
 
       <section class="view" id="view-reef" data-view="reef" hidden>
-        <div class="section-heading"><div><span class="eyebrow">ÉQUILIBRE DU MONDE</span><h2>Récif</h2></div></div>
+        <div class="section-heading"><div><span class="eyebrow">ÉTENDRE SON MONDE</span><h2>Conquête</h2></div></div>
+        <div id="conquest-content"></div>
         <div id="reef-content" class="locked-panel"></div>
       </section>
 
       <section class="view" id="view-evolution" data-view="evolution" hidden>
-        <div class="section-heading"><div><span class="eyebrow">MÉMOIRE VIVANTE</span><h2>Évolution</h2></div></div>
+        <div class="section-heading"><div><span class="eyebrow">MÉMOIRE VIVANTE</span><h2>Héritage</h2></div></div>
         <div id="evolution-content"></div>
       </section>
     </div>
@@ -78,8 +83,8 @@
   <nav class="bottom-nav" aria-label="Navigation principale">
     <button class="active" data-tab="source"><span class="nav-icon">◉</span><span>Source</span></button>
     <button data-tab="life"><span class="nav-icon">⌁</span><span>Vie</span></button>
-    <button data-tab="reef"><span class="nav-icon">◇</span><span>Récif</span><i class="nav-lock" id="reef-lock"></i></button>
-    <button data-tab="evolution"><span class="nav-icon">✦</span><span>Évolution</span></button>
+    <button data-tab="reef"><span class="nav-icon">◇</span><span>Conquête</span><i class="nav-lock" id="reef-lock"></i></button>
+    <button data-tab="evolution"><span class="nav-icon">✦</span><span>Héritage</span></button>
   </nav>
 
   <div class="toast-region" id="toast-region" aria-live="polite"></div>
@@ -95,6 +100,7 @@
     </form>
   </dialog>
   <dialog id="offline-dialog"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2>L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
+  <dialog id="action-dialog"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
   <script src="game.js" defer></script>
 </body>
 </html>
