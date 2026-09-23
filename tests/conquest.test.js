@@ -12,7 +12,7 @@ function session() {
     localStorage: { getItem: () => null },
     performance: { now: () => 0 },
     navigator: {},
-    document: {},
+    document: { querySelector: () => ({ classList: { add: () => {}, remove: () => {} } }) },
     matchMedia: () => ({ matches: false }),
     scrollTo: () => {},
     setTimeout: () => {},
@@ -66,10 +66,154 @@ test('expedition failure keeps claimed territory and starts cooldown', () => {
   const run = session();
   run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"]');
   assert.equal(run('launchExpedition("raid",()=>.99)'), true);
-  assert.equal(run('state.lumen'), 920);
+  assert.equal(run('state.lumen'), 950);
   assert.equal(run('state.territories.length'), 1);
   assert.equal(run('launchExpedition("raid",()=>0)'), false);
   assert.equal(run('state.nextExpeditionAt>Date.now()'), true);
+});
+
+test('territory specialties are exclusive, valid only for claimed zones, and affect their mechanics', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.territories=["cove","lagoon","archipelago","trench"]');
+  assert.equal(run('chooseTerritoryPath("archipelago","sails")'), true);
+  assert.equal(run('industryRates().tides'), .25);
+  assert.equal(run('chooseTerritoryPath("archipelago","beacons")'), false);
+  assert.equal(run('chooseTerritoryPath("world","unknown")'), false);
+  assert.equal(run('chooseTerritoryPath("not-owned","patient")'), false);
+  assert.equal(run('chooseTerritoryPath("lagoon","amber")'), true);
+  run('state.runLifetime=25000;state.industry.filter=1');
+  assert.equal(run('industryRates().insight'), .72);
+});
+
+test('expedition destination can be changed only to a claimed territory', () => {
+  const run = session();
+  run('state.lumen=1000;state.runLifetime=5000;state.territories=["cove","lagoon"]');
+  assert.equal(run('state.expeditionZone'), null);
+  assert.equal(run('selectExpeditionZone("cove")'), true);
+  assert.equal(run('selectExpeditionZone("archipelago")'), false);
+  assert.equal(run('launchExpedition("patrol",()=>.99)'), true);
+  assert.equal(run('state.conquestLog.at(-1).zoneId'), 'cove');
+});
+
+test('two expedition outings unlock one permanent discovery even when both fail', () => {
+  const run = session();
+  run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"];state.expeditionZone="cove"');
+  const before = run('globalMult()');
+  assert.equal(run('launchExpedition("raid",()=>.99)'), true);
+  assert.equal(run('state.expeditionProgress.cove'), 1);
+  assert.equal(run('state.expeditionFinds.includes("cove")'), false);
+  run('state.nextExpeditionAt=0');
+  assert.equal(run('launchExpedition("raid",()=>.99)'), true);
+  assert.equal(run('state.expeditionProgress.cove'), 2);
+  assert.equal(run('state.expeditionFinds.filter(id=>id==="cove").length'), 1);
+  assert.equal(run('globalMult()'), before * 1.04);
+  run('state.nextExpeditionAt=0');
+  run('launchExpedition("patrol",()=>.99)');
+  assert.equal(run('state.expeditionProgress.cove'), 2);
+  assert.equal(run('state.expeditionFinds.length'), 1);
+});
+
+test('legacy saves migrate safely to specialties, expedition, heritage, and resonance fields', () => {
+  const run = session();
+  run('legacySave=sanitise({schemaVersion:4,memories:3,prestigeCount:2,memoryUpgrades:["rhythm"],territories:["cove","lagoon"],territoryPaths:{cove:"invalid",world:"patient"},expeditionProgress:{cove:1,lagoon:99},expeditionFinds:["cove","world"],expeditionZone:"world",resonanceCharge:140})');
+  assert.equal(run('legacySave.schemaVersion'), 5);
+  assert.equal(run('legacySave.territoryPaths.cove'), undefined);
+  assert.equal(run('legacySave.expeditionZone'), 'lagoon');
+  assert.equal(run('legacySave.expeditionProgress.cove'), 1);
+  assert.equal(run('legacySave.expeditionProgress.lagoon'), 2);
+  assert.equal(run('legacySave.expeditionFinds.length'), 1);
+  assert.equal(run('legacySave.totalMemories'), 5);
+  assert.equal(run('legacySave.resonanceCharge'), 100);
+});
+
+test('schema v4 preserves the two Pearl cost of Rhythm at zero current balance', () => {
+  const run = session();
+  run('legacySave=sanitise({schemaVersion:4,memories:0,memoryUpgrades:["rhythm"]})');
+  assert.equal(run('legacySave.memories'), 0);
+  assert.equal(run('legacySave.totalMemories'), 2);
+  assert.equal(run('1+legacySave.totalMemories*.25'), 1.5);
+});
+
+test('prestige preserves lifetime heritage count and scales production from that count', async () => {
+  const run = session();
+  run('openAction=async()=>({confirmed:true});switchTab=()=>{};state.runLifetime=4e12;state.lumen=123;state.allTimeLumen=456;state.memories=2;state.totalMemories=5;state.prestigeCount=3;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.generators.firefly=99;state.industry.filter=4;state.memoryUpgrades=["seed"];state.mutations=["cosmic"]');
+  await run('prestige()');
+  assert.equal(run('state.memories'), 4);
+  assert.equal(run('state.totalMemories'), 7);
+  assert.equal(run('state.prestigeCount'), 4);
+  assert.equal(run('state.allTimeLumen'), 456);
+  assert.equal(run('state.generators.firefly'), 16);
+  assert.equal(run('state.industry.filter'), 0);
+  assert.equal(run('state.territories.length'), 0);
+  assert.equal(run('globalMult()'), 1 + 7 * .375);
+});
+
+test('buying the first Seed grants six fireflies without reducing the permanent multiplier', () => {
+  const run = session();
+  run('state.memories=1;state.totalMemories=1');
+  const before = run('globalMult()');
+  assert.equal(run('buyMemoryUpgrade("seed")'), undefined);
+  assert.equal(run('state.generators.firefly'), 6);
+  assert.equal(run('state.memories'), 0);
+  assert.equal(run('state.totalMemories'), 1);
+  assert.equal(run('globalMult()'), before);
+});
+
+test('Wayfinder discounts the first 25 generator costs and max-buy remains affordable', () => {
+  const run = session();
+  run('state.memoryUpgrades=["wayfinder"];const g=GENERATORS[0]');
+  assert.equal(run('cost(GENERATORS[0],25)'), run('geometricCost(GENERATORS[0],0,25)*.75'));
+  assert.equal(run('cost(GENERATORS[0],26)'), run('geometricCost(GENERATORS[0],0,26)-geometricCost(GENERATORS[0],0,25)*.25'));
+  run('state.generators.firefly=20');
+  assert.equal(run('cost(GENERATORS[0],10)'), run('geometricCost(GENERATORS[0],20,10)-geometricCost(GENERATORS[0],20,5)*.25'));
+  run('state.generators.firefly=0');
+  run('state.lumen=cost(GENERATORS[0],7)');
+  assert.equal(run('maxBuy(GENERATORS[0])'), 7);
+  assert.equal(run('cost(GENERATORS[0],maxBuy(GENERATORS[0]))<=state.lumen'), true);
+  assert.equal(run('cost(GENERATORS[0],maxBuy(GENERATORS[0])+1)>state.lumen'), true);
+});
+
+test('next milestone previews the multiplier attached to the upcoming threshold', () => {
+  const run = session();
+  run('state.runLifetime=1e12;state.generators.firefly=9');
+  assert.equal(run('nextMilestone().mark'), 10);
+  assert.equal(run('nextMilestone().bonus'), 2);
+  run('state.generators.firefly=49');
+  assert.equal(run('nextMilestone().mark'), 50);
+  assert.equal(run('nextMilestone().bonus'), 3);
+  run('state.generators.firefly=99');
+  assert.equal(run('nextMilestone().mark'), 100);
+  assert.equal(run('nextMilestone().bonus'), 5);
+});
+
+test('prestige gains start at one trillion and increase at four trillion', () => {
+  const run = session();
+  run('state.runLifetime=1e12-1');
+  assert.equal(run('prestigeGain()'), 0);
+  run('state.runLifetime=1e12');
+  assert.equal(run('prestigeGain()'), 1);
+  run('state.runLifetime=4e12-1');
+  assert.equal(run('prestigeGain()'), 1);
+  run('state.runLifetime=4e12');
+  assert.equal(run('prestigeGain()'), 2);
+});
+
+test('resonance charges with play and time, then activates for the expected duration', () => {
+  const run = session();
+  run('state.resonanceCharge=80;economy(10)');
+  assert.equal(run('state.resonanceCharge'), 92);
+  run('state.memoryUpgrades=["rhythm"];economy(5)');
+  assert.equal(run('state.resonanceCharge'), 100);
+  run('state.resonanceCharge=0;state.resonanceUntil=0;economy(10)');
+  assert.equal(run('state.resonanceCharge'), 24);
+  run('state.resonanceCharge=0;state.totalTaps=0;pulse()');
+  assert.equal(run('state.resonanceCharge'), 10);
+  run('state.resonanceCharge=92.5;state.mutations=["dream"];pulse();');
+  assert.equal(run('state.resonanceCharge'), 100);
+  assert.equal(run('state.resonanceUntil'), 0);
+  run('pulse()');
+  assert.equal(run('state.resonanceCharge'), 0);
+  assert.equal(run('Math.abs((state.resonanceUntil-Date.now())-45000)<100'), true);
 });
 
 test('eras require territory gates in addition to production', () => {

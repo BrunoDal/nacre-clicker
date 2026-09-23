@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=9">
   <title>Nacre — Conquête des océans</title>
 </head>
 <body>
@@ -39,9 +39,22 @@
         <div class="horizon">
           <div class="progress-copy"><span id="next-label">Première luciole</span><strong id="next-value">10</strong></div>
           <div class="progress-track"><i id="era-progress"></i></div>
+          <button class="prestige-ready" id="prestige-ready" hidden>Renaissance disponible · voir l’Héritage →</button>
         </div>
 
         <div class="source-stage" id="source-stage">
+          <div class="scene-life" aria-hidden="true">
+            <span class="scene-ray"></span>
+            <span class="scene-kelp scene-kelp-left"></span>
+            <span class="scene-kelp scene-kelp-right"></span>
+            <span class="scene-coral scene-coral-left"></span>
+            <span class="scene-coral scene-coral-right"></span>
+            <span class="scene-school"></span>
+            <span class="scene-reef-glow"></span>
+            <span class="scene-bubble scene-bubble-one"></span>
+            <span class="scene-bubble scene-bubble-two"></span>
+            <span class="scene-bubble scene-bubble-three"></span>
+          </div>
           <div class="orbit-ring" aria-hidden="true"><i></i><i></i><i></i></div>
           <button id="pulse-button" class="pearl" aria-label="Faire pulser la cellule pour produire de la lueur">
             <span class="pearl-core"></span><span class="pearl-shine"></span>
@@ -52,6 +65,12 @@
             <div class="resonance-track"><i id="resonance-bar"></i></div>
           </div>
         </div>
+
+        <article class="milestone-card" id="milestone-card" aria-live="polite" aria-atomic="true" hidden>
+          <span class="milestone-spark" aria-hidden="true">✦</span>
+          <div><span class="eyebrow">PETIT COURANT</span><h2 id="milestone-title"></h2><p id="milestone-copy"></p></div>
+          <span class="milestone-progress" id="milestone-progress" aria-hidden="true"></span>
+        </article>
 
         <article class="focus-card" id="focus-card">
           <div class="focus-icon" aria-hidden="true">✦</div>
@@ -99,11 +118,11 @@
       <button type="button" class="secondary-button" id="export-button">Exporter la sauvegarde</button>
       <button type="button" class="secondary-button" id="import-button">Importer une sauvegarde</button>
       <button type="button" class="danger-button" id="reset-button">Recommencer cette partie</button>
-      <p class="version">Nacre 1.1 · Sauvegarde locale automatique</p>
+      <p class="version">Nacre 1.2 · Sauvegarde locale automatique</p>
     </form>
   </dialog>
   <dialog id="offline-dialog"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2>L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
   <dialog id="action-dialog"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
-  <script src="game.js?v=7" defer></script>
+  <script src="game.js?v=9" defer></script>
 </body>
 </html>
