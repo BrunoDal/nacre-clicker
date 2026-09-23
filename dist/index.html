@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=7">
   <title>Nacre — Conquête des océans</title>
 </head>
 <body>
@@ -29,7 +29,9 @@
 
     <section class="resource-strip" aria-live="polite">
       <div><span class="resource-value" id="lumen-display">0</span><span class="resource-unit"> lueurs</span></div>
+      <div class="balance-exact" id="balance-exact" hidden></div>
       <div class="rate"><span class="live-dot"></span><span id="rate-display">0 / seconde</span></div>
+      <div class="secondary-resources" id="secondary-resources" hidden></div>
     </section>
 
     <div class="views">
@@ -65,6 +67,7 @@
       <section class="view" id="view-life" data-view="life" hidden>
         <div class="section-heading"><div><span class="eyebrow">VOTRE ÉCOSYSTÈME</span><h2>Vie lumineuse</h2></div><div class="buy-modes" role="group" aria-label="Quantité d’achat"><button class="active" data-buy-mode="1">×1</button><button data-buy-mode="10">×10</button><button data-buy-mode="max">Max</button></div></div>
         <div class="generator-list" id="generator-list"></div>
+        <div id="era-tools"></div>
       </section>
 
       <section class="view" id="view-reef" data-view="reef" hidden>
@@ -96,11 +99,11 @@
       <button type="button" class="secondary-button" id="export-button">Exporter la sauvegarde</button>
       <button type="button" class="secondary-button" id="import-button">Importer une sauvegarde</button>
       <button type="button" class="danger-button" id="reset-button">Recommencer cette partie</button>
-      <p class="version">Nacre 1.0 · Sauvegarde locale automatique</p>
+      <p class="version">Nacre 1.1 · Sauvegarde locale automatique</p>
     </form>
   </dialog>
   <dialog id="offline-dialog"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2>L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
   <dialog id="action-dialog"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
-  <script src="game.js" defer></script>
+  <script src="game.js?v=7" defer></script>
 </body>
 </html>
