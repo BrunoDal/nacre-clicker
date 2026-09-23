@@ -119,4 +119,13 @@ body[data-era="3"] .pearl:active,body[data-era="3"] .pearl.pulsing{transform:sca
 .expedition-value{margin:7px 0 0;padding:8px 10px;border-radius:10px;background:rgba(117,246,196,.06);color:#c4ddd6;font-size:.73rem;line-height:1.4}
 .expedition-value strong{color:var(--mint)}
 @media(max-width:390px){.guide-button{padding:0 10px}.guide-sheet{padding-left:14px;padding-right:14px}.guide-resources>div{grid-template-columns:74px minmax(0,1fr)}}
-@media(max-width:480px){.expedition-card .choice-grid{grid-template-columns:1fr}.expedition-card .choice-button{min-height:0}}
+@media(max-width:480px){.expedition-card .choice-grid,.conquest-card .choice-grid{grid-template-columns:1fr}.expedition-card .choice-button,.conquest-card .choice-button{min-height:0}}
+.prestige-checklist{display:grid;gap:8px;margin:15px 0;padding:0;list-style:none}
+.prestige-checklist li{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:start;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.035)}
+.prestige-checklist li>span{color:var(--muted);font-weight:800}
+.prestige-checklist li.ready{border-color:rgba(117,246,196,.28);background:rgba(117,246,196,.055)}
+.prestige-checklist li.ready>span{color:var(--mint)}
+.prestige-checklist strong,.prestige-checklist small{display:block}
+.prestige-checklist strong{font-size:.78rem;color:var(--ink)}
+.prestige-checklist small{margin-top:3px;color:var(--muted);font-size:.72rem;line-height:1.4;overflow-wrap:anywhere}
+.prestige-reward{margin:12px 0;padding:11px 12px;border:1px solid rgba(168,139,255,.24);border-radius:12px;background:rgba(168,139,255,.08);color:#e3d8ff;font-size:.8rem;line-height:1.45}
