@@ -52,17 +52,20 @@ test('a risky success claims territory, pays its reward, and unlocks expeditions
   run('state.lumen=100;state.runLifetime=100');
   assert.equal(run('attemptConquest("risk",()=>0)'), true);
   assert.equal(run('state.lumen'), 68);
+  assert.equal(run('state.runLifetime'), 100);
   assert.equal(run('state.territories[0]'), 'cove');
   assert.equal(run('state.riskyWins'), 1);
   assert.equal(run('attemptConquest("risk",()=>0)'), false);
 });
 
-test('scouting costs resources, increases odds, and never endangers territory', () => {
+test('scouting is an affordable preparation that improves odds and expected cost', () => {
   const run = session();
   run('state.lumen=100;state.runLifetime=100');
   assert.equal(run('scoutTerritory()'), true);
-  assert.equal(run('state.lumen'), 84);
+  assert.equal(run('state.lumen'), 96);
   assert.equal(run('territoryChance(TERRITORIES[0])'), .63);
+  assert.equal(run('expectedRiskCost(TERRITORIES[0]) < expectedRiskCost(TERRITORIES[0],0)'), true);
+  assert.equal(run('TERRITORIES[0].cost*.05+expectedRiskCost(TERRITORIES[0]) < expectedRiskCost(TERRITORIES[0],0)'), true);
   assert.equal(run('state.territories.length'), 0);
   run('state.scouting.cove=5');
   assert.equal(run('scoutTerritory()'), false);
@@ -89,7 +92,7 @@ test('safe conquest is guaranteed at one territory cost while risk is modestly c
   const expectedCostRatio = run('(()=>{let survival=1,spent=0;for(let misses=0;misses<6;misses++){spent+=survival*60;survival*=1-Math.min(.95,.55+misses*.08)}return (spent-28*(1-survival))/80})()');
   assert.ok(Math.abs(expectedCostRatio-.907)<.002, `expected cost ratio was ${expectedCostRatio}`);
   run('state.runLifetime=100;state.lumen=100;renderConquest()');
-  assert.match(run("document.querySelector('#conquest-content').innerHTML"), /coût net 32 lueurs/);
+  assert.match(run("document.querySelector('#conquest-content').innerHTML"), /soit 32 lueurs nettes/);
 });
 
 test('patrol is free and a failed raid only loses its two-percent stake', () => {
@@ -145,6 +148,7 @@ test('successful raid discovers immediately while a patrol supplies a free first
   assert.equal(run('expeditionTerms("raid").payout-expeditionTerms("raid").stake'), 22);
   assert.equal(run('state.expeditionFinds.filter(id=>id==="cove").length'), 1);
   assert.equal(run('state.lumen'), 1022);
+  assert.equal(run('state.runLifetime'), 1000);
   assert.equal(run('globalMult()'), before * 1.04);
   run('state.nextExpeditionAt=0');
   assert.equal(run('launchExpedition("patrol",()=>.99)'), false);
@@ -368,6 +372,13 @@ test('purchase gain includes generator milestones', () => {
   assert.equal(run('generatorOutput(GENERATORS[0],100)>generatorOutput(GENERATORS[0],99)'), true);
 });
 
+test('smart recommendation uses the real marginal gain at the next milestone', () => {
+  const run = session();
+  run('state.runLifetime=1000;state.generators.firefly=9;state.generators.polyp=1');
+  assert.equal(run('recommendation().id'), 'firefly');
+  assert.equal(run('generatorOutput(GENERATORS[0],10)-generatorOutput(GENERATORS[0],9)'), 2.2);
+});
+
 test('new era tools produce and spend their resources without blocking older saves', () => {
   const run = session();
   assert.equal(run('sanitise({schemaVersion:3,lumen:100}).industry.filter'), 0);
@@ -384,12 +395,21 @@ test('new era tools produce and spend their resources without blocking older sav
 
 test('ocean era unlocks harmony production and accords', () => {
   const run = session();
-  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.tides=400;state.harmony=20');
+  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.tides=250;state.harmony=20');
   assert.equal(run('buyTool("choir")'), true);
   assert.equal(run('industryRates().harmony'), .2);
   assert.equal(run('buyTool("accord")'), true);
   assert.equal(run('state.industry.accord'), 1);
   assert.equal(run('freshState().harmony'), 0);
+});
+
+test('wait estimates explain when frontiers and late tools become affordable', () => {
+  const run = session();
+  assert.match(run('affordStatus(100,40,2,"lueurs")'), /Encore 60 lueurs · moins d’1 min/);
+  assert.match(run('formatDuration(1334)'), /environ 23 min/);
+  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.tides=0;renderGenerators()');
+  assert.match(run("document.querySelector('#era-tools').innerHTML"), /Chœur abyssal/);
+  assert.match(run("document.querySelector('#era-tools').innerHTML"), /Encore 250 marées · environ 14 min/);
 });
 
 test('offline progress also restores the new resources', () => {
