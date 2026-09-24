@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=17">
   <title>Nacre — Conquête des océans</title>
 </head>
 <body>
@@ -30,7 +30,7 @@
       </div>
     </header>
 
-    <section class="resource-strip" aria-live="polite">
+    <section class="resource-strip">
       <div><span class="resource-value" id="lumen-display">0</span><span class="resource-unit"> lueurs</span></div>
       <div class="balance-exact" id="balance-exact" hidden></div>
       <div class="rate"><span class="live-dot"></span><span id="rate-display">0 / seconde</span></div>
@@ -106,10 +106,10 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
-    <button class="active" data-tab="source"><span class="nav-icon">◉</span><span>Source</span></button>
-    <button data-tab="life"><span class="nav-icon">⌁</span><span>Vie</span></button>
-    <button data-tab="reef"><span class="nav-icon">◇</span><span>Conquête</span><i class="nav-lock" id="reef-lock"></i></button>
-    <button data-tab="evolution"><span class="nav-icon">✦</span><span>Héritage</span></button>
+    <button class="active" data-tab="source" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span><span>Source</span></button>
+    <button data-tab="life"><span class="nav-icon" aria-hidden="true">⌁</span><span>Vie</span></button>
+    <button data-tab="reef"><span class="nav-icon" aria-hidden="true">◇</span><span>Conquête</span><i class="nav-lock" id="reef-lock" aria-hidden="true"></i></button>
+    <button data-tab="evolution"><span class="nav-icon" aria-hidden="true">✦</span><span>Héritage</span></button>
   </nav>
 
   <div class="toast-region" id="toast-region" aria-live="polite"></div>
@@ -146,19 +146,19 @@
       <button class="secondary-button" value="close">Continuer tranquillement</button>
     </form>
   </dialog>
-  <dialog id="settings-dialog">
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
     <form method="dialog" class="sheet">
-      <div class="sheet-handle"></div><div class="sheet-head"><div><span class="eyebrow">NACRE</span><h2>Réglages</h2></div><button class="icon-button" value="close" aria-label="Fermer">×</button></div>
+      <div class="sheet-handle"></div><div class="sheet-head"><div><span class="eyebrow">NACRE</span><h2 id="settings-title">Réglages</h2></div><button class="icon-button" value="close" aria-label="Fermer">×</button></div>
       <label class="setting-row"><span><strong>Animations</strong><small>Ondes et particules</small></span><input type="checkbox" id="motion-toggle" checked></label>
       <label class="setting-row"><span><strong>Vibrations</strong><small>Retour tactile discret</small></span><input type="checkbox" id="haptics-toggle" checked></label>
       <button type="button" class="secondary-button" id="export-button">Exporter la sauvegarde</button>
       <button type="button" class="secondary-button" id="import-button">Importer une sauvegarde</button>
       <button type="button" class="danger-button" id="reset-button">Recommencer cette partie</button>
-      <p class="version">Nacre 1.5 · Sauvegarde locale automatique</p>
+      <p class="version">Nacre 1.6 · Sauvegarde locale automatique</p>
     </form>
   </dialog>
-  <dialog id="offline-dialog"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2>L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
-  <dialog id="action-dialog"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
-  <script src="game.js?v=16" defer></script>
+  <dialog id="offline-dialog" aria-labelledby="offline-title"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2 id="offline-title">L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
+  <dialog id="action-dialog" aria-labelledby="action-title"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
+  <script src="game.js?v=17" defer></script>
 </body>
 </html>

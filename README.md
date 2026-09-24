@@ -10,6 +10,8 @@ Chaque ère enrichit la colonie sans imposer une course : les ateliers cultivent
 
 Les prochains paliers de producteurs sont visibles avant l’achat et font évoluer le paysage de la source. La Résonance se charge aussi avec le temps : plus besoin d’enchaîner les pulsations rapidement. Chaque territoire conquis peut suivre l’une de deux spécialités, et deux sorties dans une zone garantissent la découverte d’un souvenir qui renforce cet océan. Le guide intégré explique les ressources, les curseurs montrent leur effet chiffré et chaque nouvelle ère annonce ses déblocages. Dès l’Archipel, l’Héritage affiche les trois conditions de la renaissance. La première mue donne deux Perles, de quoi choisir deux héritages à une Perle ; les Perles dépensées continuent de renforcer la production des vies suivantes.
 
+La version 1.6 renforce la lisibilité mobile : typographie secondaire agrandie, gains et paliers mieux hiérarchisés, états indisponibles encore lisibles, ressources colorées et route de conquête horizontale centrée sur la prochaine frontière. Les surfaces, accents et repères de navigation partagent désormais le même habillage bioluminescent.
+
 Servez le dossier avec un serveur HTTP, par exemple `python -m http.server 4173`, puis ouvrez `http://localhost:4173`.
 
 La progression est sauvegardée automatiquement. Le jeu fonctionne hors ligne après la première visite et peut être installé sur l’écran d’accueil d’un iPhone.

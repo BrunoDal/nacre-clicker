@@ -379,6 +379,17 @@ test('smart recommendation uses the real marginal gain at the next milestone', (
   assert.equal(run('generatorOutput(GENERATORS[0],10)-generatorOutput(GENERATORS[0],9)'), 2.2);
 });
 
+test('generator cards expose gain, before-after output, milestone, and affordability in a scannable order', () => {
+  const run = session();
+  run('state.runLifetime=1000;state.lumen=1000;state.generators.firefly=9;renderGenerators()');
+  const html = run("document.querySelector('#generator-list').innerHTML");
+  assert.match(html, /class="gen-lore"/);
+  assert.match(html, /class="purchase-gain"><b>\+2,2 lueurs\/s<\/b>/);
+  assert.match(html, /9.*maintenant.*4.*après achat/);
+  assert.match(html, /class="milestone-note">Palier 10/);
+  assert.match(html, /class="purchase-status">Prêt à accueillir/);
+});
+
 test('new era tools produce and spend their resources without blocking older saves', () => {
   const run = session();
   assert.equal(run('sanitise({schemaVersion:3,lumen:100}).industry.filter'), 0);
