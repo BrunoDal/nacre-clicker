@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+const eras = fs.readFileSync(path.join(__dirname, '..', 'eras.js'), 'utf8');
 const game = fs.readFileSync(path.join(__dirname, '..', 'game.js'), 'utf8');
 const logic = game.slice(0, game.indexOf("$('#pulse-button').onpointerdown"));
 
@@ -33,13 +34,16 @@ function session() {
     scrollTo: () => {},
     setTimeout: () => {},
   });
-  vm.runInContext(`${logic}\ntoast=()=>{};render=()=>{};save=()=>{};haptic=()=>{};`, context);
+  vm.runInContext(`${eras}\n${logic}\ntoast=()=>{};render=()=>{};save=()=>{};haptic=()=>{};oceanSound=()=>{};updateOceanSound=()=>{};setOceanSound=()=>{};`, context);
   return (expression) => vm.runInContext(expression, context);
 }
 
 test('a failed risky claim loses only the stake and improves the next chance', () => {
   const run = session();
-  run('state.lumen=100;state.runLifetime=100');
+  run('state.lumen=100;state.runLifetime=24999');
+  assert.equal(run('attemptConquest("risk",()=>.99)'), false);
+  assert.equal(run('state.lumen'), 100);
+  run('state.runLifetime=1e9');
   assert.equal(run('attemptConquest("risk",()=>.99)'), true);
   assert.equal(run('state.lumen'), 40);
   assert.equal(run('state.territories.length'), 0);
@@ -49,10 +53,10 @@ test('a failed risky claim loses only the stake and improves the next chance', (
 
 test('a risky success claims territory, pays its reward, and unlocks expeditions', () => {
   const run = session();
-  run('state.lumen=100;state.runLifetime=100');
+  run('state.lumen=100;state.runLifetime=1e9');
   assert.equal(run('attemptConquest("risk",()=>0)'), true);
   assert.equal(run('state.lumen'), 68);
-  assert.equal(run('state.runLifetime'), 100);
+  assert.equal(run('state.runLifetime'), 1e9);
   assert.equal(run('state.territories[0]'), 'cove');
   assert.equal(run('state.riskyWins'), 1);
   assert.equal(run('attemptConquest("risk",()=>0)'), false);
@@ -60,7 +64,7 @@ test('a risky success claims territory, pays its reward, and unlocks expeditions
 
 test('scouting is an affordable preparation that improves odds and expected cost', () => {
   const run = session();
-  run('state.lumen=100;state.runLifetime=100');
+  run('state.lumen=100;state.runLifetime=1e9');
   assert.equal(run('scoutTerritory()'), true);
   assert.equal(run('state.lumen'), 96);
   assert.equal(run('territoryChance(TERRITORIES[0])'), .63);
@@ -74,7 +78,7 @@ test('scouting is an affordable preparation that improves odds and expected cost
 
 test('safe claims cannot fail and old saves remain valid', () => {
   const run = session();
-  run('state.lumen=120;state.runLifetime=120');
+  run('state.lumen=120;state.runLifetime=1e9');
   assert.equal(run('attemptConquest("safe",()=>.99)'), true);
   assert.equal(run('state.lumen'), 40);
   assert.equal(run('state.territories[0]'), 'cove');
@@ -91,13 +95,14 @@ test('safe conquest is guaranteed at one territory cost while risk is modestly c
   // over repeated attempts is about 0.91× the zone cost, near the safe 1× cost.
   const expectedCostRatio = run('(()=>{let survival=1,spent=0;for(let misses=0;misses<6;misses++){spent+=survival*60;survival*=1-Math.min(.95,.55+misses*.08)}return (spent-28*(1-survival))/80})()');
   assert.ok(Math.abs(expectedCostRatio-.907)<.002, `expected cost ratio was ${expectedCostRatio}`);
-  run('state.runLifetime=100;state.lumen=100;renderConquest()');
-  assert.match(run("document.querySelector('#conquest-content').innerHTML"), /soit 32 lueurs nettes/);
+  run('state.runLifetime=1e9;state.lumen=100;renderExploration()');
+  assert.match(run("document.querySelector('#conquest-content').innerHTML"), /Préparer l’expédition/);
+  assert.doesNotMatch(run("document.querySelector('#conquest-content').innerHTML"), /mise|risque/);
 });
 
 test('patrol is free and a failed raid only loses its two-percent stake', () => {
   const run = session();
-  run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"];state.expeditionZone="cove"');
+  run('state.lumen=1000;state.runLifetime=1e9;state.territories=["cove"];state.expeditionZone="cove"');
   assert.equal(run('expeditionTerms("patrol").stake'), 0);
   assert.equal(run('launchExpedition("patrol",()=>.99)'), true);
   assert.equal(run('state.lumen'), 1000);
@@ -126,7 +131,7 @@ test('territory specialties are exclusive, valid only for claimed zones, and aff
 
 test('expedition destination can be changed only to a claimed territory', () => {
   const run = session();
-  run('state.lumen=1000;state.runLifetime=5000;state.territories=["cove","lagoon"]');
+  run('state.lumen=1000;state.runLifetime=1e9;state.territories=["cove","lagoon"]');
   assert.equal(run('state.expeditionZone'), null);
   assert.equal(run('selectExpeditionZone("cove")'), true);
   assert.equal(run('selectExpeditionZone("archipelago")'), false);
@@ -136,7 +141,7 @@ test('expedition destination can be changed only to a claimed territory', () => 
 
 test('successful raid discovers immediately while a patrol supplies a free first outing', () => {
   const run = session();
-  run('state.lumen=1000;state.runLifetime=1000;state.territories=["cove"];state.expeditionZone="cove"');
+  run('state.lumen=1000;state.runLifetime=1e9;state.territories=["cove"];state.expeditionZone="cove"');
   const before = run('globalMult()');
   assert.equal(run('launchExpedition("patrol",()=>.99)'), true);
   assert.equal(run('state.expeditionProgress.cove'), 1);
@@ -148,8 +153,8 @@ test('successful raid discovers immediately while a patrol supplies a free first
   assert.equal(run('expeditionTerms("raid").payout-expeditionTerms("raid").stake'), 22);
   assert.equal(run('state.expeditionFinds.filter(id=>id==="cove").length'), 1);
   assert.equal(run('state.lumen'), 1022);
-  assert.equal(run('state.runLifetime'), 1000);
-  assert.equal(run('globalMult()'), before * 1.04);
+  assert.equal(run('state.runLifetime'), 1e9);
+  assert.ok(Math.abs(run('globalMult()') / before - 1.04) < 1e-12);
   run('state.nextExpeditionAt=0');
   assert.equal(run('launchExpedition("patrol",()=>.99)'), false);
   assert.equal(run('state.expeditionProgress.cove'), 2);
@@ -195,7 +200,7 @@ test('crossing an era opens a readable unlock announcement in the mocked dialog'
   run('state.runLifetime=25000;state.lumen=1;state.territories=["cove","lagoon"];economy(1)');
   assert.equal(run('knownEra'), 1);
   assert.equal(run('pendingEraAnnouncement'), 0);
-  assert.equal(run('activeEraDestination'), 'reef');
+  assert.equal(run('activeEraDestination'), 'source');
   assert.equal(run("document.querySelector('#era-dialog').shown"), true);
   assert.equal(run("document.querySelector('#era-dialog-title').textContent"), 'Les Colonies s’éveillent');
   assert.equal(run("document.querySelector('#era-dialog-unlocks').children.length"), 3);
@@ -204,7 +209,7 @@ test('crossing an era opens a readable unlock announcement in the mocked dialog'
 test('legacy saves migrate safely to specialties, expedition, heritage, and resonance fields', () => {
   const run = session();
   run('legacySave=sanitise({schemaVersion:4,memories:3,prestigeCount:2,memoryUpgrades:["rhythm"],territories:["cove","lagoon"],territoryPaths:{cove:"invalid",world:"patient"},expeditionProgress:{cove:1,lagoon:99},expeditionFinds:["cove","world"],expeditionZone:"world",resonanceCharge:140})');
-  assert.equal(run('legacySave.schemaVersion'), 5);
+  assert.equal(run('legacySave.schemaVersion'), 6);
   assert.equal(run('legacySave.territoryPaths.cove'), undefined);
   assert.equal(run('legacySave.expeditionZone'), 'lagoon');
   assert.equal(run('legacySave.expeditionProgress.cove'), 1);
@@ -222,9 +227,9 @@ test('schema v4 preserves the two Pearl cost of Rhythm at zero current balance',
   assert.equal(run('1+legacySave.totalMemories*.25'), 1.5);
 });
 
-test('prestige preserves lifetime heritage count and scales production from that count', async () => {
+test('prestige preserves lifetime heritage and the journal while resetting era choices', async () => {
   const run = session();
-  run('openAction=async()=>({confirmed:true});switchTab=()=>{};state.runLifetime=4e12;state.lumen=123;state.allTimeLumen=456;state.memories=2;state.totalMemories=5;state.prestigeCount=3;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.generators.firefly=99;state.industry.filter=4;state.memoryUpgrades=["seed"];state.mutations=["cosmic"]');
+  run('openAction=async()=>({confirmed:true});switchTab=()=>{};state.runLifetime=4e12;state.lumen=123;state.allTimeLumen=456;state.memories=2;state.totalMemories=5;state.prestigeCount=3;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.generators.firefly=99;state.industry.filter=4;state.memoryUpgrades=["seed"];state.mutations=["cosmic"];state.songs=[{combo:"lueur-maree-abyme",notes:["lueur","maree","abyme"],createdAt:1}];state.journal=[{text:"Ancien monde",at:1}];state.oceanType="deep";state.nextOceanType="storm";state.routes={cove:"supply"};state.discoveries={cove:"glimmer"};state.symbioses=["spark-garden"];');
   await run('prestige()');
   assert.equal(run('state.memories'), 5);
   assert.equal(run('state.totalMemories'), 8);
@@ -233,7 +238,15 @@ test('prestige preserves lifetime heritage count and scales production from that
   assert.equal(run('state.generators.firefly'), 16);
   assert.equal(run('state.industry.filter'), 0);
   assert.equal(run('state.territories.length'), 0);
-  assert.equal(run('globalMult()'), 1 + 8 * .375);
+  assert.equal(run('state.journal.length'), 1);
+  assert.equal(run('state.journal[0].text'), 'Ancien monde');
+  assert.equal(run('state.oceanType'), 'storm');
+  assert.equal(run('state.nextOceanType'), 'storm');
+  assert.equal(run('state.songs.length'), 0);
+  assert.equal(run('state.routes.cove'), undefined);
+  assert.equal(run('state.discoveries.cove'), undefined);
+  assert.equal(run('state.symbioses.length'), 0);
+  assert.equal(run('globalMult()'), (1 + 8 * .375) * .9);
 });
 
 test('buying the first Seed grants six fireflies without reducing the permanent multiplier', () => {
@@ -288,7 +301,7 @@ test('prestige grants two first pearls at one trillion and the next at four tril
   assert.equal(run('nextPearlLifetime()'), 9e12);
 });
 
-test('prestige checklist previews all three requirements from the Archipelago', () => {
+test('prestige checklist previews production, territories, nodes, and the first song', () => {
   const run = session();
   run('state.runLifetime=1e9;state.territories=TERRITORIES.slice(0,4).map(zone=>zone.id);state.nodes=NODES.slice(0,2).map(node=>node.id);renderEvolution()');
   const card = run("document.querySelector('#evolution-content').innerHTML");
@@ -296,11 +309,16 @@ test('prestige checklist previews all three requirements from the Archipelago', 
   assert.match(card, /Lueurs produites/);
   assert.match(card, /Territoires/);
   assert.match(card, /Nœuds du récif/);
+  assert.match(card, /Chant de l’océan/);
   assert.match(card, /2 Perles de mémoire/);
   run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);renderEvolution()');
   const ready = run("document.querySelector('#evolution-content').innerHTML");
-  assert.match(ready, /Renaître avec 2 Perles/);
+  assert.match(ready, /Composez un premier chant/);
   assert.equal((ready.match(/class="ready"/g) || []).length, 3);
+  run('state.songs=[{combo:"lueur-maree-abyme",notes:["lueur","maree","abyme"],createdAt:1}];renderEvolution()');
+  const complete = run("document.querySelector('#evolution-content').innerHTML");
+  assert.match(complete, /Renaître avec 2 Perles/);
+  assert.equal((complete.match(/class="ready"/g) || []).length, 4);
 });
 
 test('resonance charges with play and time, then activates for the expected duration', () => {
@@ -321,16 +339,193 @@ test('resonance charges with play and time, then activates for the expected dura
   assert.equal(run('Math.abs((state.resonanceUntil-Date.now())-45000)<100'), true);
 });
 
-test('eras require territory gates in addition to production', () => {
+test('first two eras unlock from production; the sovereign era retains territory and node gates', () => {
   const run = session();
-  run('state.runLifetime=1e12');
+  run('state.runLifetime=24999');
   assert.equal(run('getEra()'), 0);
-  run('state.territories=["cove","lagoon"]');
+  run('state.runLifetime=25000');
   assert.equal(run('getEra()'), 1);
-  run('state.territories=["cove","lagoon","archipelago","trench"]');
+  run('state.runLifetime=1e9');
+  assert.equal(run('getEra()'), 2);
+  run('state.runLifetime=1e12');
   assert.equal(run('getEra()'), 2);
   run('state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id)');
   assert.equal(run('getEra()'), 3);
+});
+
+test('colony establishment requires a prepared frontier and spends all three resources atomically', () => {
+  const run = session();
+  run('state.runLifetime=25000;state.lumen=1e9;state.vitality=1000;state.tides=1000');
+  assert.equal(run('prepareColony("cove")'), false);
+  run('state.runLifetime=1e9;state.lumen=2e8;state.vitality=80;state.tides=9');
+  assert.equal(run('prepareColony("lagoon")'), false);
+  assert.equal(run('prepareColony("cove")'), true);
+  assert.equal(run('prepareColony("cove")'), false);
+  assert.equal(run('state.journal.length'), 1);
+  assert.equal(run('establishColony("cove")'), false);
+  assert.equal(run('state.lumen'), 2e8);
+  assert.equal(run('state.vitality'), 80);
+  assert.equal(run('state.tides'), 9);
+  run('state.tides=10');
+  assert.equal(run('establishColony("cove")'), true);
+  assert.equal(run('state.lumen'), 0);
+  assert.equal(run('state.vitality'), 0);
+  assert.equal(run('state.tides'), 0);
+  assert.equal(run('state.territories[0]'), 'cove');
+  assert.equal(run('state.expeditionPlans.cove'), undefined);
+  assert.equal(run('establishColony("cove")'), false);
+  assert.equal(run('prepareColony("archipelago")'), false);
+});
+
+test('routes and discoveries validate ownership, uniqueness, and their resource costs', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.territories=["cove"];state.tides=19;state.insight=44');
+  assert.equal(run('connectRoute("lagoon","supply")'), false);
+  assert.equal(run('connectRoute("cove","unknown")'), false);
+  assert.equal(run('connectRoute("cove","supply")'), false);
+  assert.equal(run('state.tides'), 19);
+  run('state.tides=20');
+  assert.equal(run('connectRoute("cove","supply")'), true);
+  assert.equal(run('state.routes.cove'), 'supply');
+  assert.equal(run('state.tides'), 0);
+  assert.equal(run('connectRoute("cove","research")'), false);
+  assert.equal(run('state.journal.length'), 1);
+  run('state.tides=3');
+  assert.equal(run('selectDiscovery("lagoon","amber-library")'), false);
+  assert.equal(run('selectDiscovery("cove","unknown")'), false);
+  assert.equal(run('selectDiscovery("cove","glimmer")'), false);
+  assert.equal(run('state.insight'), 44);
+  assert.equal(run('state.tides'), 3);
+  run('state.insight=46');
+  assert.equal(run('selectDiscovery("cove","glimmer")'), true);
+  assert.equal(run('state.insight'), 1);
+  assert.equal(run('state.tides'), 0);
+  assert.equal(run('eraProductionMult()'), 1.08 * 1.025);
+  assert.equal(run('selectDiscovery("cove","nursery")'), false);
+});
+
+test('ocean, symbiosis, route, and discovery bonuses stay in their own production channels', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.generators.firefly=10;state.industry.filter=2;state.allocation={light:70,insight:20,vitality:10};state.oceanType="calm"');
+  const calmRate = run('globalMult()');
+  const calmInsight = run('allocationEffects().insight');
+  run('state.oceanType="storm"');
+  assert.ok(Math.abs(run('eraProductionMult()') - .9) < 1e-12);
+  assert.ok(Math.abs(run('eraResourceMult("insight")') - 1.3) < 1e-12);
+  assert.ok(Math.abs(run('allocationEffects().insight') / calmInsight - 1.3) < 1e-9);
+  assert.equal(run('eraResourceMult("tides")'), 1.4);
+  assert.equal(run('eraResourceMult("unknown")'), 1);
+});
+
+test('three-note songs cost more over time and cannot be composed twice', () => {
+  const run = session();
+  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.harmony=100;state.tides=100');
+  assert.equal(run('chooseNote("unknown")'), false);
+  assert.equal(run('chooseNote("lueur")'), true);
+  assert.equal(run('chooseNote("lueur")'), true);
+  assert.equal(run('chooseNote("maree")'), true);
+  assert.equal(run('composeSong()'), true);
+  assert.equal(run('state.harmony'), 82);
+  assert.equal(run('state.tides'), 70);
+  assert.equal(run('state.songs.length'), 1);
+  assert.equal(run('state.composition.length'), 0);
+  run('state.composition=["lueur","lueur","maree"]');
+  assert.equal(run('composeSong()'), false);
+  assert.equal(run('state.harmony'), 82);
+  assert.equal(run('state.tides'), 70);
+  run('state.composition=[]');
+  assert.equal(run('chooseNote("lueur")'), true);
+  assert.equal(run('chooseNote("maree")'), true);
+  assert.equal(run('chooseNote("abyme")'), true);
+  assert.equal(run('composeSong()'), true);
+  assert.equal(run('state.harmony'), 56);
+  assert.equal(run('state.tides'), 28);
+  assert.equal(run('state.songs.length'), 2);
+});
+
+test('legacy and malformed era saves are sanitized while journal history stays bounded', () => {
+  const run = session();
+  run('legacyEra=sanitise({schemaVersion:5,memories:2,territories:TERRITORIES.map(zone=>zone.id),journal:[{text:"trace",at:2},{text:"<bad>",at:"invalid"},"invalid"],oceanType:"unknown",nextOceanType:"storm",symbioses:["invalid","spark-garden","spark-garden"],routes:{cove:"invalid",world:"chorus"},discoveries:{cove:"invalid",world:"world-song"},composition:["lueur","unknown","maree"],songs:[{combo:"invalid"},{combo:"lueur-maree-abyme",createdAt:3},{combo:"lueur-maree-abyme",createdAt:4}]})');
+  assert.equal(run('legacyEra.schemaVersion'), 6);
+  assert.equal(run('legacyEra.oceanType'), 'calm');
+  assert.equal(run('legacyEra.nextOceanType'), 'storm');
+  assert.deepEqual(JSON.parse(run('JSON.stringify(legacyEra.symbioses)')), ['spark-garden']);
+  assert.equal(run('legacyEra.routes.cove'), undefined);
+  assert.equal(run('legacyEra.routes.world'), 'chorus');
+  assert.equal(run('legacyEra.discoveries.cove'), undefined);
+  assert.equal(run('legacyEra.discoveries.world'), 'world-song');
+  assert.equal(run('legacyEra.composition.length'), 2);
+  assert.equal(run('legacyEra.songs.length'), 1);
+  assert.equal(run('legacyEra.journal.length'), 2);
+  assert.equal(run('legacyEra.journal[1].at'), 0);
+  run('state=legacyEra;renderJournal();roundTripEra=sanitise(JSON.parse(JSON.stringify(state)))');
+  assert.equal(run('roundTripEra.journal.length'), 2);
+  const journalHtml = run('renderJournal()');
+  assert.match(journalHtml, /&lt;bad&gt;/);
+  assert.doesNotMatch(journalHtml, /<bad>/);
+  assert.equal(run('sanitise({journal:Array.from({length:100},(_,i)=>({text:String(i),at:i}))}).journal.length'), 80);
+  run('gapEra=sanitise({schemaVersion:5,territories:["world"],routes:{world:"chorus"},discoveries:{world:"world-song"}})');
+  assert.equal(run('gapEra.territories.length'), 0);
+  assert.equal(run('gapEra.routes.world'), undefined);
+  assert.equal(run('gapEra.discoveries.world'), undefined);
+});
+
+test('ocean objectives award their type-specific bonus once and reset on renaissance', async () => {
+  const run = session();
+  run('state.runLifetime=25000;state.symbioses=ERA_SYMBIOSES.map(item=>item.id)');
+  assert.equal(run('oceanObjective().title'), 'Tisser trois symbioses');
+  const calmBefore = run('eraProductionMult()');
+  assert.equal(run('claimOceanObjective()'), true);
+  assert.equal(run('state.oceanObjectiveClaimed'), true);
+  assert.ok(Math.abs(run('eraProductionMult()') / calmBefore - 1.1) < 1e-12);
+  assert.equal(run('claimOceanObjective()'), false);
+  assert.equal(run('state.journal.length'), 1);
+
+  run('state.oceanType="storm";state.oceanObjectiveClaimed=false;state.symbioses=[];state.runLifetime=1e9;state.territories=["cove","lagoon","archipelago"];state.routes={cove:"supply",lagoon:"research",archipelago:"research"}');
+  assert.equal(run('oceanObjective().title'), 'Relier trois routes');
+  assert.equal(run('claimOceanObjective()'), true);
+  const stormTideBonus = run('eraResourceMult("tides")');
+  assert.ok(Math.abs(stormTideBonus - 1.68) < 1e-12, `storm tides multiplier was ${stormTideBonus}`);
+  assert.equal(run('claimOceanObjective()'), false);
+
+  run('state.oceanType="deep";state.oceanObjectiveClaimed=false;state.symbioses=[];state.routes={};state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.songs=[{combo:"lueur-maree-abyme",notes:["lueur","maree","abyme"],createdAt:1},{combo:"lueur-lueur-maree",notes:["lueur","lueur","maree"],createdAt:2}]');
+  assert.equal(run('oceanObjective().title'), 'Composer deux chants');
+  assert.equal(run('claimOceanObjective()'), true);
+  assert.ok(Math.abs(run('eraResourceMult("harmony")') - 1.8) < 1e-12);
+  assert.equal(run('claimOceanObjective()'), false);
+
+  run('openAction=async()=>({confirmed:true});switchTab=()=>{};state.runLifetime=4e12;state.memories=0;state.totalMemories=0;state.prestigeCount=0;state.songs=[{combo:"lueur-maree-abyme",notes:["lueur","maree","abyme"],createdAt:1}];state.oceanObjectiveClaimed=true;state.nextOceanType="storm"');
+  await run('prestige()');
+  assert.equal(run('state.oceanType'), 'storm');
+  assert.equal(run('state.oceanObjectiveClaimed'), false);
+});
+
+test('composition notes can be removed individually or cleared without spending resources', () => {
+  const run = session();
+  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.harmony=50;state.tides=70');
+  assert.equal(run('removeNote(0)'), false);
+  assert.equal(run('resetComposition()'), false);
+  assert.equal(run('chooseNote("lueur")'), true);
+  assert.equal(run('chooseNote("maree")'), true);
+  assert.equal(run('chooseNote("abyme")'), true);
+  assert.equal(run('removeNote(-1)'), false);
+  assert.equal(run('removeNote(3)'), false);
+  assert.equal(run('removeNote(1)'), true);
+  assert.deepEqual(JSON.parse(run('JSON.stringify(state.composition)')), ['lueur', 'abyme']);
+  assert.equal(run('resetComposition()'), true);
+  assert.equal(run('state.composition.length'), 0);
+  assert.equal(run('state.harmony'), 50);
+  assert.equal(run('state.tides'), 70);
+  assert.equal(run('resetComposition()'), false);
+});
+
+test('the era IV exploration map offers no new colony actions', () => {
+  const run = session();
+  run('state.runLifetime=1e12;state.territories=TERRITORIES.map(zone=>zone.id);state.nodes=NODES.map(node=>node.id);state.expeditionPlans.world=true;renderExploration()');
+  const html = run("document.querySelector('#conquest-content').innerHTML");
+  assert.doesNotMatch(html, /data-prepare=|data-settle=/);
+  assert.equal(run('prepareColony("world")'), false);
+  assert.equal(run('establishColony("world")'), false);
 });
 
 test('imported upgrades and nodes cannot be duplicated to bypass gates', () => {
@@ -354,8 +549,8 @@ test('purchase amounts stay readable and max never promises an unaffordable purc
 
 test('mutation cards name intuition as their cost and describe Symbiose output precisely', () => {
   const run = session();
-  run('state.runLifetime=25000;state.territories=["cove","lagoon"];state.insight=35;renderEvolution()');
-  const html = run("document.querySelector('#evolution-content').innerHTML");
+  run('state.runLifetime=25000;state.insight=35;renderMutations()');
+  const html = run("document.querySelector('#mutations-content').innerHTML");
   const symbiosis = html.match(/data-mutation="symbiosis"[\s\S]*?<\/button>/)?.[0];
   assert.ok(symbiosis);
   assert.match(symbiosis, /35 intuition/);

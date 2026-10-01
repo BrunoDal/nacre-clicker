@@ -2,15 +2,22 @@
 
 Jouer : https://BrunoDal.github.io/nacre-clicker/
 
-Un clicker PWA mobile-first où une cellule bioluminescente part d’une petite anse et conquiert peu à peu un océan entier.
+Un clicker PWA mobile-first où une cellule bioluminescente devient un océan vivant. Chaque ère propose une activité différente, tout en conservant la production automatique et hors ligne.
 
-Produisez des lueurs, développez des espèces et prenez six territoires. Chaque conquête propose une voie sûre au coût garanti, ou une percée moins chère en moyenne mais avec une mise réellement risquée. Une reconnaissance abordable améliore les chances, et l’interface compare désormais le coût moyen des approches ainsi que leur temps d’attente. Les expéditions permettent ensuite de découvrir des souvenirs qui augmentent la production : la patrouille est gratuite et garantie, l’incursion peut accélérer la découverte contre une petite mise. Un échec ne retire jamais de territoire. Les courants, mutations et renaissances prolongent la progression.
+- **Noyau** : faites grandir la cellule et déclenchez la Résonance. Les Colonies s’ouvrent à 25 000 lueurs produites.
+- **Colonies** : associez les espèces en symbioses et répartissez les courants entre lueurs, intuition et vitalité. Les ateliers cultivent les ressources. L’Archipel s’ouvre à 1 milliard de lueurs produites, sans conquête préalable.
+- **Archipel** : préparez les expéditions, puis établissez six colonies en dépensant des lueurs, de la vitalité et des marées. Reliez les îles par des routes spécialisées et faites des découvertes qui orientent votre stratégie.
+- **Océan souverain** : après 1 billion (1 T) de lueurs produites, six territoires colonisés et six nœuds activés, assemblez trois voix pour composer des chants. Les combinaisons offrent différents bonus. Un premier chant permet la renaissance.
 
-Chaque ère enrichit la colonie sans imposer une course : les ateliers cultivent intuition et vitalité, les balises récoltent des marées pour construire des voiliers, puis les chœurs produisent de l’harmonie pour composer des accords. Les outils annoncent le temps nécessaire pour les financer et l’arrivée de l’harmonie a été resserrée. Les achats affichent le coût précis et le gain réel de production, y compris en mode Max ; le conseil principal compare maintenant le vrai rendement marginal et tient compte des paliers.
+À la renaissance, choisissez une lagune calme, une mer de tempête ou des abysses profonds. Chaque océan offre des compromis de production et de ressources, ainsi qu’un objectif particulier. Les Perles, améliorations d’Héritage et le journal survivent ; symbioses, colonies, routes, découvertes actives et chants recommencent. Nacre cosmique conserve son effet permanent.
 
-Les prochains paliers de producteurs sont visibles avant l’achat et font évoluer le paysage de la source. La Résonance se charge aussi avec le temps : plus besoin d’enchaîner les pulsations rapidement. Chaque territoire conquis peut suivre l’une de deux spécialités, et deux sorties dans une zone garantissent la découverte d’un souvenir qui renforce cet océan. Le guide intégré explique les ressources, les curseurs montrent leur effet chiffré et chaque nouvelle ère annonce ses déblocages. Dès l’Archipel, l’Héritage affiche les trois conditions de la renaissance. La première mue donne deux Perles, de quoi choisir deux héritages à une Perle ; les Perles dépensées continuent de renforcer la production des vies suivantes.
+La navigation sépare **Océan** (activité de l’ère et scène vivante), **Écosystème** (espèces, outils, mutations et courants), **Exploration** (colonies, routes, découvertes et journal) et **Héritage** (Perles et renaissance). Touchez une ressource pour connaître sa source et son usage. Les outils des anciennes ères restent accessibles dans des sections repliables.
 
-La version 1.6 renforce la lisibilité mobile : typographie secondaire agrandie, gains et paliers mieux hiérarchisés, états indisponibles encore lisibles, ressources colorées et route de conquête horizontale centrée sur la prochaine frontière. Les surfaces, accents et repères de navigation partagent désormais le même habillage bioluminescent.
+Les scènes évoluent avec les espèces et les ères. Une ambiance sonore synthétisée, facultative et désactivée par défaut, accompagne les actions. Elle attend un geste utilisateur et s’arrête quand le jeu passe en arrière-plan. Les animations et vibrations restent réglables.
+
+Les sauvegardes existantes sont migrées automatiquement sans effacer les ressources, les anciens territoires, spécialités, souvenirs ou améliorations permanentes.
+
+Vérifiez la logique avec `node --test tests/*.test.js`.
 
 Servez le dossier avec un serveur HTTP, par exemple `python -m http.server 4173`, puis ouvrez `http://localhost:4173`.
 

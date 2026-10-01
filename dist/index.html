@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Nacre">
-  <meta name="description" content="Faites grandir une colonie de lumière, conquérez les océans et osez des expéditions à risque.">
+  <meta name="description" content="Faites pulser la source, faites grandir un écosystème et unissez les territoires de Nacre.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=17">
-  <title>Nacre — Conquête des océans</title>
+  <link rel="stylesheet" href="styles.css?v=18">
+  <title>Nacre — L’océan vivant</title>
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -44,6 +44,9 @@
           <div class="progress-track"><i id="era-progress"></i></div>
           <button class="prestige-ready" id="prestige-ready" hidden>Renaissance disponible · voir l’Héritage →</button>
         </div>
+        <article class="ocean-identity" id="ocean-identity" aria-live="polite">
+          <span class="eyebrow">UN OCÉAN À FAÇONNER</span><strong id="ocean-identity-copy">La source s’éveille · Chaque pulsation nourrit la lumière qui fera naître votre monde.</strong>
+        </article>
 
         <div class="source-stage" id="source-stage">
           <div class="scene-life" aria-hidden="true">
@@ -53,6 +56,9 @@
             <span class="scene-coral scene-coral-left"></span>
             <span class="scene-coral scene-coral-right"></span>
             <span class="scene-school"></span>
+            <span class="scene-island scene-island-left"></span>
+            <span class="scene-island scene-island-right"></span>
+            <span class="scene-choir" aria-hidden="true"></span>
             <span class="scene-reef-glow"></span>
             <span class="scene-bubble scene-bubble-one"></span>
             <span class="scene-bubble scene-bubble-two"></span>
@@ -75,6 +81,7 @@
           <span class="milestone-progress" id="milestone-progress" aria-hidden="true"></span>
         </article>
 
+        <div id="era-activity" aria-live="polite"></div>
         <article class="focus-card" id="focus-card">
           <div class="focus-icon" aria-hidden="true">✦</div>
           <div><span class="eyebrow">PROCHAINE ÉVOLUTION</span><h2 id="focus-title">Attirer une luciole</h2><p id="focus-copy">Elle entretiendra la lumière pendant votre absence.</p></div>
@@ -87,15 +94,17 @@
       </section>
 
       <section class="view" id="view-life" data-view="life" hidden>
-        <div class="section-heading"><div><span class="eyebrow">VOTRE ÉCOSYSTÈME</span><h2>Vie lumineuse</h2></div><div class="buy-modes" role="group" aria-label="Quantité d’achat"><button class="active" data-buy-mode="1">×1</button><button data-buy-mode="10">×10</button><button data-buy-mode="max">Max</button></div></div>
+        <div class="section-heading"><div><span class="eyebrow">VOTRE ÉCOSYSTÈME</span><h2>Écosystème vivant</h2></div><div class="buy-modes" role="group" aria-label="Quantité d’achat"><button class="active" data-buy-mode="1">×1</button><button data-buy-mode="10">×10</button><button data-buy-mode="max">Max</button></div></div>
         <div class="generator-list" id="generator-list"></div>
         <div id="era-tools"></div>
+        <div id="reef-content" class="locked-panel"></div>
+        <div id="mutations-content"></div>
       </section>
 
       <section class="view" id="view-reef" data-view="reef" hidden>
-        <div class="section-heading"><div><span class="eyebrow">ÉTENDRE SON MONDE</span><h2>Conquête</h2></div></div>
+        <div class="section-heading"><div><span class="eyebrow">ÉTENDRE SON MONDE</span><h2>Exploration</h2></div></div>
         <div id="conquest-content"></div>
-        <div id="reef-content" class="locked-panel"></div>
+        <div id="journal-content"></div>
       </section>
 
       <section class="view" id="view-evolution" data-view="evolution" hidden>
@@ -106,9 +115,9 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
-    <button class="active" data-tab="source" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span><span>Source</span></button>
-    <button data-tab="life"><span class="nav-icon" aria-hidden="true">⌁</span><span>Vie</span></button>
-    <button data-tab="reef"><span class="nav-icon" aria-hidden="true">◇</span><span>Conquête</span><i class="nav-lock" id="reef-lock" aria-hidden="true"></i></button>
+    <button class="active" data-tab="source" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span><span>Océan</span></button>
+    <button data-tab="life"><span class="nav-icon" aria-hidden="true">⌁</span><span>Écosystème</span></button>
+    <button data-tab="reef"><span class="nav-icon" aria-hidden="true">◇</span><span>Exploration</span><i class="nav-lock" id="reef-lock" aria-hidden="true"></i></button>
     <button data-tab="evolution"><span class="nav-icon" aria-hidden="true">✦</span><span>Héritage</span></button>
   </nav>
 
@@ -119,18 +128,20 @@
       <div class="sheet-head"><div><span class="eyebrow">BIENVENUE DANS NACRE</span><h2 id="guide-title">Le guide de l’océan</h2></div><button class="icon-button" value="close" aria-label="Fermer le guide">×</button></div>
       <p class="guide-intro" id="guide-intro">Faites grandir un monde vivant, découvrez ses courants, puis transmettez ses acquis à l’océan suivant. Il n’y a pas de mauvais rythme : la production continue aussi pendant votre absence.</p>
       <div class="guide-content">
-        <section class="guide-section"><h3>La boucle du jeu</h3><p><strong>Pulsez</strong> la perle et achetez des espèces dans <strong>Vie</strong> pour produire des lueurs automatiquement. Elles ouvrent de nouvelles ères, territoires et améliorations. Les achats de producteurs sont le moteur principal ; les autres systèmes donnent des bonus et des choix.</p></section>
+        <section class="guide-section"><h3>La boucle du jeu</h3><p><strong>Pulsez</strong> la source, puis achetez des espèces dans <strong>Écosystème</strong> pour produire des lueurs. Chaque ère ajoute une manière de faire grandir l’océan : résonance, symbioses, conquête, puis composition et renaissance.</p></section>
         <section class="guide-section"><h3>À quoi servent les ressources ?</h3><dl class="guide-resources">
           <div><dt>Lueurs</dt><dd>La ressource principale : pulsations, producteurs, outils et conquête.</dd></div>
-          <div><dt>Intuition</dt><dd>Générée à partir de votre production et des filtres. Dépensez-la pour les mutations et les nœuds du récif, qui améliorent durablement cet océan.</dd></div>
-          <div><dt>Vitalité</dt><dd>Vient de la production et des jardins. Son stock renforce progressivement les lueurs par seconde, au lieu d’ajouter directement des lueurs.</dd></div>
-          <div><dt>Marées</dt><dd>Produites par les balises et territoires. Elles achètent voiliers, puis chœurs.</dd></div>
-          <div><dt>Harmonie</dt><dd>Produite par les chœurs abyssaux ; dépensée en accords qui augmentent les lueurs par seconde.</dd></div>
-          <div><dt>Perles</dt><dd>Gagnées en faisant renaître l’océan. Elles renforcent les océans futurs et achètent des améliorations permanentes d’Héritage.</dd></div>
+          <div><dt>Intuition</dt><dd>Les filtres la recueillent. Elle sert aux mutations et aux nœuds du récif.</dd></div>
+          <div><dt>Vitalité</dt><dd>Les jardins la cultivent. Elle soutient les symbioses et la conquête.</dd></div>
+          <div><dt>Marées</dt><dd>Les territoires et les balises en apportent. Elles ouvrent des routes et des compositions.</dd></div>
+          <div><dt>Harmonie</dt><dd>Les chœurs la font naître. Elle permet de composer des notes avec les marées.</dd></div>
+          <div><dt>Perles</dt><dd>La renaissance les transmet aux océans suivants. Elles achètent les améliorations permanentes d’Héritage.</dd></div>
         </dl></section>
-        <section class="guide-section"><h3>Les curseurs : faut-il les toucher ?</h3><p>À partir de l’ère II, ils répartissent une réserve commune de <strong>100 %</strong> entre trois courants. Le réglage initial <strong>70 / 20 / 10</strong> fonctionne déjà : vous pouvez l’ignorer.</p><ul><li><strong>Photosynthèse (lueurs)</strong> : plus de part augmente directement les lueurs par seconde.</li><li><strong>Exploration (intuition)</strong> : plus de part accélère les achats de mutations et de nœuds.</li><li><strong>Symbiose (vitalité)</strong> : plus de part fait croître plus vite le bonus de production lié à la vitalité.</li></ul><p>Déplacez un curseur seulement si vous voulez accélérer un objectif précis. Les outils achetés produisent aussi intuition et vitalité sans régler ces curseurs.</p></section>
-        <section class="guide-section"><h3>Conquête et expéditions</h3><p>La <strong>conquête</strong> ouvre de nouveaux territoires et offre un choix de spécialité. La colonie est garantie ; la percée engage une mise et devient plus probable après chaque échec. Observer les lieux coûte peu, améliore les chances et réduit le coût moyen estimé. Une <strong>patrouille est gratuite</strong> et avance d’une sortie vers un souvenir. Une incursion engage une petite mise : 50 % de réussite pour un gain net et la découverte immédiate du souvenir ; même en cas d’échec, une sortie est validée. Deux sorties dans un territoire garantissent un souvenir qui ajoute <strong>+4 % de lueurs par seconde</strong> à cet océan. Aucun territoire n’est perdu.</p></section>
-        <section class="guide-section"><h3>Ères et renaissance</h3><p>Chaque ère ajoute un système : l’ère II ouvre intuition et vitalité, l’ère III les marées et les routes, l’ère IV l’harmonie et la renaissance. Le nom d’ère et la scène évoluent avec votre monde. Dès l’ère III, l’Héritage montre les trois conditions de la mue. La première renaissance donne deux Perles : vous recommencez avec des bonus permanents.</p></section>
+        <section class="guide-section"><h3>Ère I · Résonance</h3><p>Pulsez la source pour remplir la jauge de résonance. À son maximum, elle renforce temporairement la production. Les premières espèces prolongent cette lumière automatiquement.</p></section>
+        <section class="guide-section"><h3>Ère II · Symbioses et courants</h3><p>Associez les espèces par paires pour faire émerger des symbioses. Dans l’Écosystème, répartissez les <strong>100 %</strong> entre lumière, intuition et vitalité : l’intuition nourrit les mutations et les nœuds, tandis que la vitalité renforce la colonie. Le budget reste visible pendant vos choix.</p></section>
+        <section class="guide-section"><h3>Ère III · Conquête</h3><p>Préparez une expédition avec des lueurs, de la vitalité et des marées, puis <strong>établissez</strong> votre colonie sur un territoire et <strong>reliez</strong>-le au réseau. Les découvertes enrichissent le journal et aident à choisir votre prochaine route. Les préparatifs rendent les avancées plus sûres.</p></section>
+        <section class="guide-section"><h3>Ère IV · Composition et renaissance</h3><p>Assemblez trois voix en combinant harmonie et marées pour composer votre premier chant. La renaissance demande ce premier accord, <strong>1 000 milliards de lueurs produites</strong>, <strong>6 territoires colonisés</strong> et <strong>6 nœuds activés</strong>. Elle transmet des Perles et ouvre un nouvel océan.</p></section>
+        <section class="guide-section"><h3>Héritage permanent</h3><p>Les Perles s’investissent dans les améliorations d’Héritage, qui accompagnent chaque nouvel océan. Les mutations et les nœuds disparaissent à la renaissance, sauf Nacre cosmique, qui persiste.</p></section>
       </div>
       <button class="primary-wide guide-done" value="close">Compris, explorer l’océan</button>
     </form>
@@ -151,14 +162,17 @@
       <div class="sheet-handle"></div><div class="sheet-head"><div><span class="eyebrow">NACRE</span><h2 id="settings-title">Réglages</h2></div><button class="icon-button" value="close" aria-label="Fermer">×</button></div>
       <label class="setting-row"><span><strong>Animations</strong><small>Ondes et particules</small></span><input type="checkbox" id="motion-toggle" checked></label>
       <label class="setting-row"><span><strong>Vibrations</strong><small>Retour tactile discret</small></span><input type="checkbox" id="haptics-toggle" checked></label>
+      <label class="setting-row"><span><strong>Ambiance sonore</strong><small>Musique douce et sons des actions</small></span><input type="checkbox" id="sound-toggle"></label>
       <button type="button" class="secondary-button" id="export-button">Exporter la sauvegarde</button>
       <button type="button" class="secondary-button" id="import-button">Importer une sauvegarde</button>
       <button type="button" class="danger-button" id="reset-button">Recommencer cette partie</button>
-      <p class="version">Nacre 1.6 · Sauvegarde locale automatique</p>
+      <p class="version">Nacre 1.7 · Sauvegarde locale automatique</p>
     </form>
   </dialog>
   <dialog id="offline-dialog" aria-labelledby="offline-title"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2 id="offline-title">L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
   <dialog id="action-dialog" aria-labelledby="action-title"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
-  <script src="game.js?v=17" defer></script>
+  <script src="eras.js?v=18" defer></script>
+  <script src="audio.js?v=18" defer></script>
+  <script src="game.js?v=18" defer></script>
 </body>
 </html>
