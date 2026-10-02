@@ -13,7 +13,9 @@ Un clicker PWA mobile-first où une cellule bioluminescente devient un océan vi
 
 La navigation sépare **Océan** (activité de l’ère et scène vivante), **Écosystème** (espèces, outils, mutations et courants), **Exploration** (colonies, routes, découvertes et journal) et **Héritage** (Perles et renaissance). Touchez une ressource pour connaître sa source et son usage. Les outils des anciennes ères restent accessibles dans des sections repliables.
 
-Les scènes évoluent avec les espèces et les ères. Une ambiance sonore synthétisée, facultative et désactivée par défaut, accompagne les actions. Elle attend un geste utilisateur et s’arrête quand le jeu passe en arrière-plan. Les animations et vibrations restent réglables.
+La source de lueur reste au-dessus des objectifs dans toutes les ères. Les espèces futures, anciennes activités et statistiques sont repliables ; Exploration met la prochaine escale en avant et indique les ressources disponibles, requises et manquantes. Les sections ouvertes et le focus clavier sont conservés lors des mises à jour.
+
+Les scènes évoluent avec les espèces et les ères. La Résonance illumine la source d’un halo lent et enrichit l’ambiance sonore lorsqu’elle est activée. Le son synthétisé reste facultatif et désactivé par défaut : il attend un geste utilisateur et s’arrête quand le jeu passe en arrière-plan. Les animations et vibrations restent réglables.
 
 Les sauvegardes existantes sont migrées automatiquement sans effacer les ressources, les anciens territoires, spécialités, souvenirs ou améliorations permanentes.
 

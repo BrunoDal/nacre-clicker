@@ -13,6 +13,9 @@ function session() {
   const element = (selector) => {
     if (!elements.has(selector)) elements.set(selector, {
       textContent: '', hidden: false, dataset: {}, open: false, shown: false,
+      innerHTMLWrites: 0, _innerHTML: '',
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(value) { this.innerHTMLWrites++; this._innerHTML = String(value); },
       classList: { add: () => {}, remove: () => {}, toggle: () => {} },
       replaceChildren(...children) { this.children = children; },
       addEventListener() {}, showModal() { this.open = true; this.shown = true; }, close() { this.open = false; },
@@ -528,6 +531,54 @@ test('the era IV exploration map offers no new colony actions', () => {
   assert.equal(run('establishColony("world")'), false);
 });
 
+test('exploration presents one actionable frontier and keeps later destinations collapsed', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.lumen=123;state.vitality=7;state.tides=3;renderExploration()');
+  let html = run("document.querySelector('#conquest-content').innerHTML");
+  assert.match(html, /class="[^"]*next-frontier[^"]*" data-frontier="cove"/);
+  assert.match(html, /<details[^>]*data-era-details="future-frontiers"[^>]*><summary[^>]*>À découvrir/);
+  assert.match(html, /data-prepare="cove"/);
+  assert.doesNotMatch(html, /data-prepare="lagoon"|data-settle="lagoon"/);
+  assert.match(html, /data-budget-current="lumen"/);
+  assert.match(html, /title="Montant exact requis : 200 000 000"/);
+
+  run('prepareColony("cove");state.lumen=2e8;state.vitality=80;state.tides=10;renderExploration()');
+  html = run("document.querySelector('#conquest-content').innerHTML");
+  const settle = html.match(/<button[^>]*data-settle="cove"[^>]*>/)?.[0];
+  assert.ok(settle, 'a prepared, affordable frontier should offer settlement');
+  assert.doesNotMatch(settle, /\sdisabled(?:\s|>)/);
+  assert.doesNotMatch(html, /data-prepare="cove"/);
+});
+
+test('completed colony cards collapse while unfinished route and discovery work stays open', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.territories=["cove"];renderExploration()');
+  let html = run("document.querySelector('#conquest-content').innerHTML");
+  assert.match(html, /<details[^>]*data-territory="cove"[^>]*open/);
+  assert.match(html, /data-route-zone="cove"/);
+  assert.match(html, /data-discovery-zone="cove"/);
+
+  run('state.routes.cove="supply";state.discoveries.cove="glimmer";renderExploration()');
+  html = run("document.querySelector('#conquest-content').innerHTML");
+  const colony = html.match(/<details[^>]*data-territory="cove"[^>]*>/)?.[0];
+  assert.ok(colony);
+  assert.doesNotMatch(colony, /\sopen(?:\s|>)/);
+  assert.doesNotMatch(html, /data-route-zone="cove"|data-discovery-zone="cove"/);
+});
+
+test('heritage hides future ocean choices and keeps statistics collapsed', () => {
+  const run = session();
+  run('state.runLifetime=25000;renderEvolution()');
+  let html = run("document.querySelector('#evolution-content').innerHTML");
+  assert.doesNotMatch(html, /data-ocean-type=/);
+  assert.match(html, /<details[^>]*data-era-details="statistics"[^>]*><summary/);
+
+  run('state.runLifetime=1e9;renderEvolution()');
+  html = run("document.querySelector('#evolution-content').innerHTML");
+  assert.match(html, /data-ocean-type="storm"/);
+  assert.match(html, /<details[^>]*data-era-details="statistics"[^>]*><summary/);
+});
+
 test('imported upgrades and nodes cannot be duplicated to bypass gates', () => {
   const run = session();
   assert.equal(run('sanitise({nodes:Array(6).fill("shoal")}).nodes.length'), 1);
@@ -583,6 +634,15 @@ test('generator cards expose gain, before-after output, milestone, and affordabi
   assert.match(html, /9.*maintenant.*4.*après achat/);
   assert.match(html, /class="milestone-note">Palier 10/);
   assert.match(html, /class="purchase-status">Prêt à accueillir/);
+});
+
+test('unchanged ecosystem panels keep their rendered nodes across refreshes', () => {
+  const run = session();
+  run('state.runLifetime=1e9;state.lumen=100000;state.insight=1000;state.generators.firefly=10;renderGenerators();renderMutations();renderEvolution()');
+  const before = run("JSON.stringify(['#generator-list','#era-tools','#mutations-content','#evolution-content'].map(selector=>document.querySelector(selector).innerHTMLWrites))");
+  run('renderGenerators();renderMutations();renderEvolution()');
+  const after = run("JSON.stringify(['#generator-list','#era-tools','#mutations-content','#evolution-content'].map(selector=>document.querySelector(selector).innerHTMLWrites))");
+  assert.equal(after, before, 'a one-second refresh with no game-state change should not rebuild focused buttons and summaries');
 });
 
 test('new era tools produce and spend their resources without blocking older saves', () => {

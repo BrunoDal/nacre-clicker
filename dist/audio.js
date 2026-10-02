@@ -10,7 +10,8 @@
     conquest: [329.63, 493.88, 659.25],
     composition: [392, 493.88, 587.33, 783.99],
     renaissance: [261.63, 392, 523.25, 783.99],
-    era: [349.23, 440, 587.33]
+    era: [349.23, 440, 587.33],
+    resonance: [523.25, 659.25, 783.99, 1046.5]
   };
   let enabled = false;
   let gestureUnlocked = false;
@@ -18,6 +19,19 @@
   let master = null;
   let ambient = null;
   let activeEra = 0;
+  let resonanceActive = false;
+
+  function ambientPitch(base) {
+    return base * (1 + activeEra * 0.075) * (resonanceActive ? 1.125 : 1);
+  }
+
+  function ambientFilterFrequency() {
+    return 950 + activeEra * 150 + (resonanceActive ? 240 : 0);
+  }
+
+  function ambientGain() {
+    return resonanceActive ? 0.041 : 0.035;
+  }
 
   function AudioContextConstructor() {
     return window.AudioContext || window.webkitAudioContext || null;
@@ -42,14 +56,15 @@
   }
 
   function startAmbient() {
-    if (!context || !master || ambient || !enabled) return;
+    if (!context || !master || ambient || !enabled || document.hidden) return;
     const now = context.currentTime;
     const bus = context.createGain();
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 950;
+    filter.frequency.value = ambientFilterFrequency();
     bus.gain.setValueAtTime(0.0001, now);
-    bus.gain.exponentialRampToValueAtTime(0.035, now + 1.8);
+    const targetGain = ambientGain();
+    bus.gain.exponentialRampToValueAtTime(targetGain, now + 1.8);
     filter.connect(bus);
     bus.connect(master);
     const voices = [];
@@ -57,7 +72,7 @@
       const oscillator = context.createOscillator();
       const voice = context.createGain();
       oscillator.type = index === 1 ? 'triangle' : 'sine';
-      oscillator.frequency.value = base * (1 + activeEra * 0.075);
+      oscillator.frequency.value = ambientPitch(base);
       voice.gain.value = index === 0 ? 0.38 : 0.2;
       oscillator.connect(voice);
       voice.connect(filter);
@@ -68,8 +83,8 @@
     const lfo = context.createOscillator();
     const lfoGain = context.createGain();
     lfo.type = 'sine';
-    lfo.frequency.value = 0.07;
-    lfoGain.gain.value = 0.008;
+    lfo.frequency.value = resonanceActive ? 0.09 : 0.07;
+    lfoGain.gain.value = resonanceActive ? 0.012 : 0.008;
     lfo.connect(lfoGain);
     lfoGain.connect(bus.gain);
     lfo.start();
@@ -84,11 +99,31 @@
     if (!context || !ambient) return;
     const now = context.currentTime;
     ambient.voices.forEach(({ oscillator, base }, index) => {
-      const frequency = base * (1 + activeEra * 0.075);
+      const frequency = ambientPitch(base);
       oscillator.frequency.cancelScheduledValues(now);
       oscillator.frequency.setTargetAtTime(frequency, now, 0.65 + index * 0.15);
     });
-    ambient.filter.frequency.setTargetAtTime(760 + activeEra * 150, now, 0.8);
+    ambient.filter.frequency.setTargetAtTime(ambientFilterFrequency(), now, 0.8);
+  }
+
+  function updateResonanceSound(active) {
+    const nextActive = Boolean(active);
+    if (nextActive === resonanceActive) return;
+    resonanceActive = nextActive;
+    if (context && ambient) {
+      const now = context.currentTime;
+      ambient.voices.forEach(({ oscillator, base }, index) => {
+        oscillator.frequency.cancelScheduledValues(now);
+        oscillator.frequency.setTargetAtTime(ambientPitch(base), now, 0.7 + index * 0.12);
+      });
+      ambient.filter.frequency.setTargetAtTime(ambientFilterFrequency(), now, 0.9);
+      ambient.bus.gain.setTargetAtTime(ambientGain(), now, 1.15);
+      ambient.lfo.frequency.setTargetAtTime(resonanceActive ? 0.09 : 0.07, now, 1.1);
+      ambient.lfoGain.gain.setTargetAtTime(resonanceActive ? 0.012 : 0.008, now, 1.1);
+    }
+    if (nextActive && enabled && gestureUnlocked && !document.hidden && context?.state === 'running') {
+      oceanSound('resonance');
+    }
   }
 
   function silenceAmbient() {
@@ -117,7 +152,7 @@
 
   function setOceanSound(value) {
     enabled = Boolean(value);
-    if (enabled && gestureUnlocked) {
+    if (enabled && gestureUnlocked && !document.hidden) {
       const audio = makeContext();
       if (!audio) return;
       if (audio.state === 'suspended') audio.resume().catch(() => {});
@@ -167,4 +202,5 @@
   window.setOceanSound = setOceanSound;
   window.oceanSound = oceanSound;
   window.updateOceanSound = setEra;
+  window.updateResonanceSound = updateResonanceSound;
 })();

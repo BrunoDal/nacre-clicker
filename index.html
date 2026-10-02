@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=20">
   <title>Nacre — L’océan vivant</title>
 </head>
 <body>
@@ -32,22 +32,13 @@
 
     <section class="resource-strip">
       <div><span class="resource-value" id="lumen-display">0</span><span class="resource-unit"> lueurs</span></div>
-      <div class="balance-exact" id="balance-exact" hidden></div>
+      <details class="balance-exact" id="balance-exact" hidden><summary>Solde précis</summary><span id="balance-exact-value"></span></details>
       <div class="rate"><span class="live-dot"></span><span id="rate-display">0 / seconde</span></div>
       <div class="secondary-resources" id="secondary-resources" hidden></div>
     </section>
 
     <div class="views">
       <section class="view active" id="view-source" data-view="source">
-        <div class="horizon">
-          <div class="progress-copy"><span id="next-label">Première luciole</span><strong id="next-value">10</strong></div>
-          <div class="progress-track"><i id="era-progress"></i></div>
-          <button class="prestige-ready" id="prestige-ready" hidden>Renaissance disponible · voir l’Héritage →</button>
-        </div>
-        <article class="ocean-identity" id="ocean-identity" aria-live="polite">
-          <span class="eyebrow">UN OCÉAN À FAÇONNER</span><strong id="ocean-identity-copy">La source s’éveille · Chaque pulsation nourrit la lumière qui fera naître votre monde.</strong>
-        </article>
-
         <div class="source-stage" id="source-stage">
           <div class="scene-life" aria-hidden="true">
             <span class="scene-ray"></span>
@@ -74,6 +65,15 @@
             <div class="resonance-track"><i id="resonance-bar"></i></div>
           </div>
         </div>
+
+        <div class="horizon">
+          <div class="progress-copy"><span id="next-label">Première luciole</span><strong id="next-value">10</strong></div>
+          <div class="progress-track"><i id="era-progress"></i></div>
+          <button class="prestige-ready" id="prestige-ready" hidden>Renaissance disponible · voir l’Héritage →</button>
+        </div>
+        <article class="ocean-identity" id="ocean-identity" aria-live="polite">
+          <span class="eyebrow">UN OCÉAN À FAÇONNER</span><strong id="ocean-identity-copy">La source s’éveille · Chaque pulsation nourrit la lumière qui fera naître votre monde.</strong>
+        </article>
 
         <article class="milestone-card" id="milestone-card" aria-live="polite" aria-atomic="true" hidden>
           <span class="milestone-spark" aria-hidden="true">✦</span>
@@ -131,15 +131,15 @@
         <section class="guide-section"><h3>La boucle du jeu</h3><p><strong>Pulsez</strong> la source, puis achetez des espèces dans <strong>Écosystème</strong> pour produire des lueurs. Chaque ère ajoute une manière de faire grandir l’océan : résonance, symbioses, conquête, puis composition et renaissance.</p></section>
         <section class="guide-section"><h3>À quoi servent les ressources ?</h3><dl class="guide-resources">
           <div><dt>Lueurs</dt><dd>La ressource principale : pulsations, producteurs, outils et conquête.</dd></div>
-          <div><dt>Intuition</dt><dd>Les filtres la recueillent. Elle sert aux mutations et aux nœuds du récif.</dd></div>
+          <div><dt>Intuition</dt><dd>Les courants et les filtres la recueillent. Elle finance les symbioses, les mutations et les nœuds du récif.</dd></div>
           <div><dt>Vitalité</dt><dd>Les jardins la cultivent. Elle soutient les symbioses et la conquête.</dd></div>
           <div><dt>Marées</dt><dd>Les territoires et les balises en apportent. Elles ouvrent des routes et des compositions.</dd></div>
-          <div><dt>Harmonie</dt><dd>Les chœurs la font naître. Elle permet de composer des notes avec les marées.</dd></div>
+          <div><dt>Harmonie</dt><dd>Les chœurs la font naître. Elle finance les chants composés avec les marées.</dd></div>
           <div><dt>Perles</dt><dd>La renaissance les transmet aux océans suivants. Elles achètent les améliorations permanentes d’Héritage.</dd></div>
         </dl></section>
         <section class="guide-section"><h3>Ère I · Résonance</h3><p>Pulsez la source pour remplir la jauge de résonance. À son maximum, elle renforce temporairement la production. Les premières espèces prolongent cette lumière automatiquement.</p></section>
         <section class="guide-section"><h3>Ère II · Symbioses et courants</h3><p>Associez les espèces par paires pour faire émerger des symbioses. Dans l’Écosystème, répartissez les <strong>100 %</strong> entre lumière, intuition et vitalité : l’intuition nourrit les mutations et les nœuds, tandis que la vitalité renforce la colonie. Le budget reste visible pendant vos choix.</p></section>
-        <section class="guide-section"><h3>Ère III · Conquête</h3><p>Préparez une expédition avec des lueurs, de la vitalité et des marées, puis <strong>établissez</strong> votre colonie sur un territoire et <strong>reliez</strong>-le au réseau. Les découvertes enrichissent le journal et aident à choisir votre prochaine route. Les préparatifs rendent les avancées plus sûres.</p></section>
+        <section class="guide-section"><h3>Ère III · Conquête</h3><p>Préparez une expédition, puis réunissez lueurs, vitalité et marées pour <strong>établissez</strong> votre colonie sur un territoire et <strong>reliez</strong>-le au réseau. Les découvertes enrichissent le journal et aident à choisir votre prochaine route. Les colonies sont établies sans risque de perte de territoire.</p></section>
         <section class="guide-section"><h3>Ère IV · Composition et renaissance</h3><p>Assemblez trois voix en combinant harmonie et marées pour composer votre premier chant. La renaissance demande ce premier accord, <strong>1 000 milliards de lueurs produites</strong>, <strong>6 territoires colonisés</strong> et <strong>6 nœuds activés</strong>. Elle transmet des Perles et ouvre un nouvel océan.</p></section>
         <section class="guide-section"><h3>Héritage permanent</h3><p>Les Perles s’investissent dans les améliorations d’Héritage, qui accompagnent chaque nouvel océan. Les mutations et les nœuds disparaissent à la renaissance, sauf Nacre cosmique, qui persiste.</p></section>
       </div>
@@ -171,8 +171,8 @@
   </dialog>
   <dialog id="offline-dialog" aria-labelledby="offline-title"><form method="dialog" class="sheet compact"><div class="offline-mark">◌</div><h2 id="offline-title">L’océan a continué de vivre</h2><p id="offline-copy"></p><button class="primary-wide" value="close">Recueillir la lueur</button></form></dialog>
   <dialog id="action-dialog" aria-labelledby="action-title"><form method="dialog" class="sheet"><div class="sheet-handle"></div><h2 id="action-title"></h2><p id="action-copy"></p><textarea id="action-input" class="action-input" aria-label="Code de sauvegarde" spellcheck="false"></textarea><button type="button" class="secondary-button" id="action-copy-button" hidden>Copier le code</button><div class="action-buttons"><button class="secondary-button" value="cancel">Annuler</button><button class="primary-wide" id="action-confirm" value="confirm">Confirmer</button></div></form></dialog>
-  <script src="eras.js?v=18" defer></script>
-  <script src="audio.js?v=18" defer></script>
-  <script src="game.js?v=18" defer></script>
+  <script src="eras.js?v=20" defer></script>
+  <script src="audio.js?v=20" defer></script>
+  <script src="game.js?v=20" defer></script>
 </body>
 </html>

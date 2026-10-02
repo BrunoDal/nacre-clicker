@@ -54,6 +54,7 @@ const ERA_ENCOUNTERS = {
   currents:'Trois courants se croisent autour d’une poche d’eau qui scintille.',
   world:'L’océan entier se tait un instant, puis laisse remonter une mémoire ancienne.'
 };
+const ERA_RENDERED_HTML = new WeakMap();
 
 function freshEraState() {
   return { oceanType:'calm', nextOceanType:'calm', oceanObjectiveClaimed:false, symbioses:[], expeditionPlans:{}, routes:{}, discoveries:{}, journal:[], composition:[], songs:[] };
@@ -232,15 +233,47 @@ function chooseOceanType(typeId) {
 }
 
 function updateEraPanel(target,html) {
-  if(!target||target.innerHTML===html)return;
-  const opened=new Map([...target.querySelectorAll('details')].map(item=>[item.querySelector('summary')?.textContent,item.open]));
+  if(!target)return;
+  if(ERA_RENDERED_HTML.get(target)===html){refreshEraBudgets(target);return}
+  const keyFor=item=>item.dataset.eraDetails||item.dataset.eraKey||item.dataset.industryEra||item.querySelector('summary')?.textContent;
+  const opened=new Map([...target.querySelectorAll('details')].map(item=>[keyFor(item),item.open]));
   const route=target.querySelector('.conquest-route'),scroll=route?.scrollLeft||0;
-  const focused=document.activeElement;
-  const attributes=focused&&target.contains?.(focused)?focused.getAttributeNames().filter(name=>name==='id'||name.startsWith('data-')).map(name=>[name,focused.getAttribute(name)]):[];
+  const focused=document.activeElement,focusedInTarget=Boolean(focused&&target.contains?.(focused));
+  const attributes=focusedInTarget?focused.getAttributeNames().filter(name=>name==='id'||name.startsWith('data-')).map(name=>[name,focused.getAttribute(name)]):[];
   target.innerHTML=html;
-  target.querySelectorAll('details').forEach(item=>{const title=item.querySelector('summary')?.textContent;if(opened.has(title))item.open=opened.get(title)});
+  ERA_RENDERED_HTML.set(target,html);
+  target.querySelectorAll('details').forEach(item=>{const key=keyFor(item);if(opened.has(key))item.open=opened.get(key)});
   const newRoute=target.querySelector('.conquest-route');if(newRoute)newRoute.scrollLeft=scroll;
   if(attributes.length){const selector=attributes.map(([name,value])=>`[${name}="${CSS.escape(value)}"]`).join('');target.querySelector(selector)?.focus({preventScroll:true})}
+  else if(focusedInTarget&&focused?.tagName==='SUMMARY'){
+    const details=focused.closest('details');
+    const identity=['data-era-details','data-era-key','data-industry-era','id'].find(name=>details?.hasAttribute(name));
+    if(identity){const selector=`[${identity}="${CSS.escape(details.getAttribute(identity))}"] > summary`;target.querySelector(selector)?.focus({preventScroll:true})}
+  }
+  refreshEraBudgets(target);
+}
+function refreshEraBudgets(target) {
+  if(!target)return;
+  const allowed=new Set(['lumen','runLifetime','insight','vitality','tides','harmony']);
+  target.querySelectorAll('[data-budget-current]').forEach(node=>{
+    const key=node.dataset.budgetCurrent;if(!allowed.has(key))return;
+    const value=Number(state[key]);if(!Number.isFinite(value))return;
+    node.textContent=format(value,true);node.title=`Valeur exacte : ${formatAmount(value)}`;
+  });
+  target.querySelectorAll('[data-budget-missing]').forEach(node=>{
+    const key=node.dataset.budgetMissing,required=Number(node.dataset.required);
+    if(!allowed.has(key)||!Number.isFinite(required))return;
+    const amount=Math.max(0,required-(Number(state[key])||0));
+    node.textContent=amount>0?`Manque ${format(amount,true)}`:'Disponible';
+    node.title=amount>0?`Montant exact manquant : ${formatAmount(amount)}`:'Ressource suffisante';
+  });
+  target.querySelectorAll('[data-run-current]').forEach(node=>{
+    const value=Number(state.runLifetime)||0;node.textContent=format(value,true);node.title=`Valeur exacte : ${formatAmount(value)} lueurs`;
+  });
+}
+function resourceBudgetRow(key,label,required) {
+  const amount=Number(required)||0;
+  return `<div class="resource-budget-row"><span class="resource-name">${label}</span><strong><span data-budget-current="${key}"></span> / <span class="resource-required" title="Montant exact requis : ${formatAmount(amount)}">${format(amount,true)}</span></strong><small><span data-budget-missing="${key}" data-required="${amount}"></span></small></div>`;
 }
 
 function renderJournal() {
@@ -248,7 +281,7 @@ function renderJournal() {
   const entries=(state.journal||[]).slice().reverse();
   const escape=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const list=items=>`<ol>${items.map(entry=>`<li class="journal-entry">${escape(entry.text)}</li>`).join('')}</ol>`;
-  const html=`<article class="panel-card era-journal"><span class="eyebrow">JOURNAL DES ÈRES</span><h3>Traces de votre monde</h3>${entries.length?`${list(entries.slice(0,5))}${entries.length>5?`<details data-era-details="journal"><summary>Voir ${entries.length-5} traces anciennes</summary>${list(entries.slice(5))}</details>`:''}`:'<p>Vos découvertes et vos choix importants apparaîtront ici.</p>'}</article>`;
+  const html=`<article class="panel-card era-journal"><span class="eyebrow">JOURNAL DES ÈRES</span><h3>Traces de votre monde</h3>${entries.length?`${list(entries.slice(0,5))}${entries.length>5?`<details data-era-details="journal"><summary data-era-summary="journal">Voir ${entries.length-5} traces anciennes</summary>${list(entries.slice(5))}</details>`:''}`:'<p>Vos découvertes et vos choix importants apparaîtront ici.</p>'}</article>`;
   updateEraPanel(target,html);
   return html;
 }
@@ -269,17 +302,48 @@ function renderEraActivity() {
   const target=$('#era-activity');
   if(!target)return '';
   const era=getEra();let html='';
-  if(era===0)html=`<article class="panel-card"><span class="eyebrow">RÉSONANCE</span><h3>Le noyau s’éveille</h3><p>Faites grandir vos espèces et pulsez la perle. À mesure que l’océan mûrit, de nouveaux choix d’équilibre apparaissent.</p></article>`;
-  if(era>=1){const symbiosis=ERA_SYMBIOSES.map(item=>{const owned=state.symbioses.includes(item.id),hasSpecies=item.species.every((id,index)=>(state.generators[id]||0)>=item.needs[index]),affordable=state.insight>=item.insight&&state.vitality>=item.vitality;return `<button class="choice-button era-choice" data-symbiosis="${item.id}" ${owned||!hasSpecies||!affordable?'disabled':''}><strong>${item.name}</strong><span>${item.copy}</span><small class="era-budget">${owned?'Déjà établie':`${item.species.map((id,index)=>`${state.generators[id]||0}/${item.needs[index]} ${GENERATORS.find(g=>g.id===id)?.name||id}`).join(' · ')} · ${item.insight} intuition · ${item.vitality} vitalité`}</small></button>`}).join('');
-    html+=era>=3?`<details class="panel-card era-older"><summary>Symbioses de l’océan</summary><p>Associez des espèces déjà présentes pour renforcer durablement l’écosystème.</p><div class="choice-grid era-grid">${symbiosis}</div></details>`:`<article class="panel-card"><span class="eyebrow">COLONIES · SYMBIOSES</span><h3>Faire coopérer les espèces</h3><p>Associez des espèces déjà présentes ; chaque symbiose renforce durablement une partie de l’écosystème.</p><div class="choice-grid era-grid">${symbiosis}</div></article>`;
+  const composition=state.composition||[],cost=compositionCost();
+  const combo=composition.length===3?composition.slice().sort((a,b)=>ERA_NOTES.findIndex(note=>note.id===a)-ERA_NOTES.findIndex(note=>note.id===b)).join('-'):null;
+  const duplicate=Boolean(combo&&state.songs.some(song=>song.combo===combo));
+  const completeSongs=state.songs.length>=10;
+  const canCompose=composition.length===3&&!duplicate&&!completeSongs&&state.harmony>=cost.harmony&&state.tides>=cost.tides;
+
+  if(era>=3){
+    const notes=ERA_NOTES.map(note=>`<button class="choice-button era-choice" data-note="${note.id}" ${composition.length>=3||completeSongs?'disabled':''}><strong>${note.icon} ${note.name}</strong><span>${note.copy}</span></button>`).join('');
+    const activeNotes=composition.map((id,index)=>`<span class="composition-note">${ERA_NOTES.find(note=>note.id===id)?.name||id}<button type="button" data-remove-note="${index}" aria-label="Retirer la note ${index+1}">×</button></span>`).join('');
+    const songs=state.songs.map(song=>`<li>${song.combo.split('-').map(id=>ERA_NOTES.find(note=>note.id===id)?.name||id).join(' · ')} · ${songBonus(song.combo)}</li>`).join('');
+    const explanation=completeSongs?'Tous les accords uniques de cet océan sont composés.':duplicate?'Cette combinaison existe déjà. Effacez-la ou changez une note.':composition.length===3?`Effet de cet accord : ${songBonus(combo)}.`:'Deux Lueurs donnent +6% de production · deux Marées donnent +8% de marées · deux Abîmes donnent +6% d’intuition · une note de chaque type donne +4% de production et +6% d’intuition et de marées.';
+    html+=`<article class="panel-card composition-card"><span class="eyebrow">OCÉAN SOUVERAIN · COMPOSITION</span><h3>Composer un chant</h3><p>Choisissez trois notes. Chaque accord unique apporte son bonus à cet océan.</p><div class="composition-notes era-grid">${notes}</div><div class="composition-status">${activeNotes||'Aucune note choisie'} · ${composition.length}/3 <button type="button" class="secondary-button" data-reset-composition ${!composition.length?'disabled':''}>Effacer</button></div><p>${explanation}</p><div class="resource-budget">${resourceBudgetRow('harmony','Harmonie',cost.harmony)}${resourceBudgetRow('tides','Marées',cost.tides)}</div><button class="primary-wide" data-compose ${!canCompose?'disabled':''}>Composer cet accord</button>${songs?`<details data-era-details="songs"><summary data-era-summary="songs">Accords déjà composés · ${state.songs.length}</summary><ol class="song-list">${songs}</ol></details>`:''}</article>`;
+    html+=renderOceanObjective(era);
   }
-  if(era>=2){const next=TERRITORIES[state.territories.length];const archipelago=`<span class="eyebrow">ARCHIPEL · EXPÉDITIONS</span><h3>${next?`Prochaine escale : ${next.name}`:'Archipel relié'}</h3><p>${next?'Préparez une expédition dans Exploration, puis établissez la colonie avec des lueurs, de la vitalité et des marées.':'Les frontières sont reliées. Les routes et découvertes renforcent le réseau.'}</p><button class="secondary-button" data-go-exploration>Ouvrir Exploration</button>`;html+=era>=3?`<details class="panel-card era-older"><summary>Voir l’archipel</summary>${archipelago}</details>`:`<article class="panel-card">${archipelago}</article>`;}
-  if(era>=3){const notes=ERA_NOTES.map(note=>`<button class="choice-button era-choice" data-note="${note.id}" ${state.composition.length>=3||state.songs.length>=10?'disabled':''}><strong>${note.icon} ${note.name}</strong><span>${note.copy}</span></button>`).join('');const composition=state.composition||[],combo=composition.length===3?composition.slice().sort((a,b)=>ERA_NOTES.findIndex(note=>note.id===a)-ERA_NOTES.findIndex(note=>note.id===b)).join('-'):null,duplicate=combo&&state.songs.some(song=>song.combo===combo),cost=compositionCost(),canCompose=composition.length===3&&!duplicate&&state.harmony>=cost.harmony&&state.tides>=cost.tides;const songs=(state.songs||[]).map(song=>`<li>${song.combo.split('-').map(id=>ERA_NOTES.find(note=>note.id===id)?.name||id).join(' · ')} · ${songBonus(song.combo)}</li>`).join('');const activeNotes=composition.map((id,index)=>`<span class="composition-note">${ERA_NOTES.find(note=>note.id===id)?.name||id}<button type="button" data-remove-note="${index}" aria-label="Retirer la note ${index+1}">×</button></span>`).join('');html+=`<article class="panel-card composition-card"><span class="eyebrow">OCÉAN SOUVERAIN · COMPOSITION</span><h3>Composer un chant</h3><p>Choisissez trois notes. Deux notes semblables renforcent leur domaine ; une note de chaque type renforce les trois.</p><div class="composition-notes era-grid">${notes}</div><div class="composition-status">${activeNotes||'Aucune note choisie'} · ${composition.length}/3 <button type="button" class="secondary-button" data-reset-composition ${!composition.length?'disabled':''}>Effacer</button></div><p class="era-budget">${state.songs.length>=10?'Tous les accords uniques de cet océan ont été composés.':composition.length===3?duplicate?'Cette combinaison existe déjà. Effacez-la ou changez une note.':`Effet : ${songBonus(combo)}`:'Bonus : deux Lueurs = production +6% · deux Marées = marées +8% · deux Abîmes = intuition +6% · trois notes différentes = production +4%, intuition et marées +6%.'}</p><button class="primary-wide" data-compose ${!canCompose?'disabled':''}>Composer · ${cost.harmony} harmonie · ${cost.tides} marées</button>${songs?`<ol class="song-list">${songs}</ol>`:''}</article>`;}
-  html+=renderOceanObjective(era);
+
+  if(era>=1){
+    const symbiosis=ERA_SYMBIOSES.map(item=>{
+      const owned=state.symbioses.includes(item.id);
+      const species=item.species.map((id,index)=>({generator:GENERATORS.find(g=>g.id===id),have:state.generators[id]||0,need:item.needs[index]}));
+      const hasSpecies=species.every(entry=>entry.have>=entry.need),affordable=state.insight>=item.insight&&state.vitality>=item.vitality;
+      const missingSpecies=species.filter(entry=>entry.have<entry.need).map(entry=>`${entry.generator?.name||entry.generator?.id} ${entry.have}/${entry.need}`);
+      const requirements=species.map(entry=>`${entry.generator?.name||entry.generator?.id} ${entry.have}/${entry.need}`).join(' · ');
+      const status=owned?'Déjà établie.':missingSpecies.length?`Espèces à obtenir : ${missingSpecies.join(' · ')}.`:affordable?'Prête à établir.':'Réunissez les ressources indiquées.';
+      const resources=`Intuition : <span data-budget-current="insight"></span> / <span title="Montant exact requis : ${formatAmount(item.insight)}">${format(item.insight,true)}</span> · Vitalité : <span data-budget-current="vitality"></span> / <span title="Montant exact requis : ${formatAmount(item.vitality)}">${format(item.vitality,true)}</span>`;
+      const missingResources=!owned&&!affordable?`<small class="era-requirement">Ressources manquantes : <span data-budget-missing="insight" data-required="${item.insight}"></span> intuition · <span data-budget-missing="vitality" data-required="${item.vitality}"></span> vitalité.</small>`:'';
+      return `<button class="choice-button era-choice ${owned?'era-selected':''}" data-symbiosis="${item.id}" ${owned||!hasSpecies||!affordable?'disabled':''}><strong>${item.name}${owned?' · Établie':''}</strong><span>${item.copy}</span><small class="era-budget">Espèces requises : ${requirements}. Coût : ${item.insight} intuition + ${item.vitality} vitalité.</small><small class="era-requirement">${status}${!owned?` ${resources}`:''}</small>${missingResources}</button>`;
+    }).join('');
+    const card=`<span class="eyebrow">COLONIES · SYMBIOSES</span><h3>Faire coopérer les espèces</h3><p>Chaque association renforce durablement une partie de l’écosystème.</p><div class="choice-grid era-grid">${symbiosis}</div>`;
+    html+=era>=3?`<details class="panel-card era-older" data-era-details="symbioses"><summary data-era-summary="symbioses">Symbioses de l’océan · ${state.symbioses.length}/${ERA_SYMBIOSES.length}</summary>${card}</details>`:`<article class="panel-card">${card}</article>`;
+  }
+
+  if(era>=2){
+    const next=TERRITORIES[state.territories.length];
+    const archipelago=`<span class="eyebrow">ARCHIPEL · EXPÉDITIONS</span><h3>${next?`Prochaine escale : ${next.name}`:'Archipel relié'}</h3><p>${next?'Préparez une expédition dans Exploration, puis réunissez les ressources indiquées pour établir la colonie.':'Les frontières sont reliées. Les routes et découvertes renforcent le réseau.'}</p><button class="secondary-button" data-go-exploration>Ouvrir Exploration</button>`;
+    html+=era>=3?`<details class="panel-card era-older" data-era-details="archipelago"><summary data-era-summary="archipelago">Voir l’archipel</summary>${archipelago}</details>`:`<article class="panel-card">${archipelago}</article>`;
+  }
+
+  if(era<3)html+=renderOceanObjective(era);
   updateEraPanel(target,html);
-  $$('[data-symbiosis]').forEach(button=>button.onclick=()=>chooseSymbiosis(button.dataset.symbiosis));
-  $$('[data-note]').forEach(button=>button.onclick=()=>chooseNote(button.dataset.note));
-  $$('[data-remove-note]').forEach(button=>button.onclick=()=>removeNote(button.dataset.removeNote));
+  target.querySelectorAll('[data-symbiosis]').forEach(button=>button.onclick=()=>chooseSymbiosis(button.dataset.symbiosis));
+  target.querySelectorAll('[data-note]').forEach(button=>button.onclick=()=>chooseNote(button.dataset.note));
+  target.querySelectorAll('[data-remove-note]').forEach(button=>button.onclick=()=>removeNote(button.dataset.removeNote));
   const reset=target.querySelector('[data-reset-composition]');if(reset)reset.onclick=resetComposition;
   const compose=target.querySelector('[data-compose]');if(compose)compose.onclick=composeSong;
   const explore=target.querySelector('[data-go-exploration]');if(explore)explore.onclick=()=>switchTab('reef');
@@ -290,21 +354,36 @@ function renderEraActivity() {
 
 function renderExploration() {
   const target=$('#conquest-content');if(!target)return '';
-  const era=getEra(),locked=era<2;
-  const gate=locked?`<article class="locked-panel"><span class="eyebrow">EXPÉDITIONS DE L’ARCHIPEL</span><h3>La carte attend l’ère III</h3><p>Les colonies, routes et découvertes s’ouvrent à l’ère Archipel.</p></article>`:'';
-  const productionRate=typeof rate==='function'?rate():0,flows=typeof allocationEffects==='function'?allocationEffects():{},work=typeof industryRates==='function'?industryRates():{};
-  const cards=TERRITORIES.map((zone,index)=>{const owned=state.territories.includes(zone.id),plan=state.expeditionPlans?.[zone.id],requirements=conquestRequirements(zone.id),route=state.routes?.[zone.id],discovery=state.discoveries?.[zone.id],choices=ERA_DISCOVERIES[zone.id]||[];
-    const colony=owned?`<span class="territory-reward">Territoire possédé · ${route?`route ${route}`:'route à relier'}</span>${!route?`<div class="choice-grid">${[['supply','Approvisionnement',20+index*15],['research','Recherche',20+index*15],['chorus','Navigation',20+index*15]].map(([mode,label,cost])=>`<button class="choice-button" data-route-zone="${zone.id}" data-route-mode="${mode}" ${state.tides<cost?'disabled':''}><strong>${label}</strong><small>${cost} marées · ${mode==='supply'?'+2,5% production':mode==='research'?'+5% intuition':'+5% marées'}</small></button>`).join('')}</div>`:''}${discovery?`<p class="discovery-value">Découverte : ${choices.find(item=>item.id===discovery)?.name||discovery} · ${choices.find(item=>item.id===discovery)?.copy||''}</p>`:`<p class="discovery-scene">${ERA_ENCOUNTERS[zone.id]||'Un détail étrange attire votre attention.'}</p><div class="choice-grid">${choices.map(item=>`<button class="choice-button" data-discovery-zone="${zone.id}" data-discovery-choice="${item.id}" ${Object.entries(item.cost).some(([key,cost])=>(state[key]||0)<cost)?'disabled':''}><strong>${item.name}</strong><span>${item.copy}</span><small>${Object.entries(item.cost).map(([key,cost])=>`${cost} ${key==='insight'?'intuition':'marées'}`).join(' · ')}</small></button>`).join('')}</div>`}`:
-      `<p class="expedition-cost">Coût d’établissement : ${formatAmount(requirements.lumen)} lueurs · ${requirements.vitality} vitalité · ${requirements.tides} marées</p><div class="era-budget">Solde : ${formatAmount(state.lumen)} lueurs (production ${format(productionRate,true)}/s) · ${formatAmount(state.vitality)} vitalité (production ${format(flows.vitality||0,true)}/s) · ${formatAmount(state.tides)} marées (production ${format(work.tides||0,true)}/s)</div>${index===state.territories.length&&state.runLifetime<zone.unlock?`<p class="era-budget">Ouverture à ${formatAmount(zone.unlock)} lueurs produites · ${formatAmount(state.runLifetime)} / ${formatAmount(zone.unlock)}</p>`:''}${plan?`<button class="primary-wide" data-settle="${zone.id}" ${getEra()!==2||state.lumen<requirements.lumen||state.vitality<requirements.vitality||state.tides<requirements.tides?'disabled':''}>Établir cette colonie</button>`:`<button class="secondary-button" data-prepare="${zone.id}" ${getEra()!==2||index!==state.territories.length||state.runLifetime<zone.unlock?'disabled':''}>Préparer l’expédition</button>`}`;
-    if(locked)return owned?`<article class="panel-card exploration-card"><span class="eyebrow">TERRITOIRE POSSÉDÉ</span><h3>${zone.icon} ${zone.name}</h3><p>${zone.copy}</p><small>Les routes et découvertes de ce territoire s’ouvriront à l’ère Archipel.</small></article>`:'';
-    return `<article class="panel-card exploration-card"><span class="eyebrow">${owned?'TERRITOIRE POSSÉDÉ':`FRONTIÈRE ${index+1} / ${TERRITORIES.length}`}</span><h3>${zone.icon} ${zone.name}</h3><p>${zone.copy}</p>${colony}</article>`;
+  const era=getEra(),locked=era<2,next=TERRITORIES[state.territories.length];
+  const gate=locked?`<article class="locked-panel"><span class="eyebrow">EXPÉDITIONS DE L’ARCHIPEL</span><h3>La carte attend l’ère III</h3><p>Les colonies, routes et découvertes s’ouvriront à l’ère Archipel. Vos territoires restent visibles sur la carte.</p></article>`:'';
+  const routeModes=[['supply','Approvisionnement','+2,5% de production'],['research','Savoir','+5% d’intuition'],['chorus','Navigation','+5% de marées']];
+  const routeNames={supply:'Approvisionnement',research:'Savoir',chorus:'Navigation'};
+  const frontier=next&&!locked?(()=>{
+    const index=state.territories.length,cost=conquestRequirements(next.id),prepared=Boolean(state.expeditionPlans?.[next.id]);
+    const isUnlocked=state.runLifetime>=next.unlock,canSettle=state.lumen>=cost.lumen&&state.vitality>=cost.vitality&&state.tides>=cost.tides;
+    const action=prepared?`<p class="expedition-status">Expédition préparée. Réunissez les ressources requises pour fonder la colonie.</p><button class="primary-wide" data-settle="${next.id}" ${era!==2||!isUnlocked||!canSettle?'disabled':''}>Établir la colonie</button>`:`<button class="secondary-button" data-prepare="${next.id}" ${era!==2||!isUnlocked?'disabled':''}>Préparer l’expédition</button>`;
+    const opening=!isUnlocked?`<div class="resource-budget"><div class="resource-budget-row"><span class="resource-name">Ouverture · lueurs produites</span><strong><span data-run-current></span> / <span class="resource-required" title="Seuil exact : ${formatAmount(next.unlock)}">${format(next.unlock,true)}</span></strong><small>La frontière s’ouvre à ce seuil.</small></div></div>`:'';
+    return `<article class="panel-card exploration-card next-frontier" data-frontier="${next.id}"><span class="eyebrow">PROCHAINE FRONTIÈRE · ${index+1}/${TERRITORIES.length}</span><h3>${next.icon} ${next.name}</h3><p>${next.copy}</p><p>Préparez l’expédition, puis réglez les trois ressources pour établir la colonie.</p><div class="resource-budget">${resourceBudgetRow('lumen','Lueurs',cost.lumen)}${resourceBudgetRow('vitality','Vitalité',cost.vitality)}${resourceBudgetRow('tides','Marées',cost.tides)}</div>${opening}${action}</article>`;
+  })():'';
+
+  const ownedCards=state.territories.map(id=>TERRITORIES.find(zone=>zone.id===id)).filter(Boolean).map(zone=>{
+    const index=TERRITORIES.indexOf(zone),route=state.routes?.[zone.id],discovery=state.discoveries?.[zone.id],choices=ERA_DISCOVERIES[zone.id]||[];
+    const pending=!locked&&(!route||!discovery),summary=`${zone.icon} ${zone.name} · ${route?routeNames[route]||'Route reliée':'route à relier'} · ${discovery?'découverte faite':'découverte à choisir'}`;
+    const routeChoices=!route?`<p>Choisissez une route. Chaque route coûte ${20+index*15} marées.</p><div class="choice-grid">${routeModes.map(([mode,label,effect])=>`<button class="choice-button" data-route-zone="${zone.id}" data-route-mode="${mode}" ${state.tides<20+index*15?'disabled':''}><strong>${label}</strong><small>${20+index*15} marées · ${effect}</small></button>`).join('')}</div>`:`<p class="discovery-value">Route reliée : ${routeNames[route]||route}.</p>`;
+    const discoveryContent=discovery?`<p class="discovery-value">${choices.find(item=>item.id===discovery)?.name||'Découverte trouvée'} · ${choices.find(item=>item.id===discovery)?.copy||''}</p>`:`<p class="discovery-scene">${ERA_ENCOUNTERS[zone.id]||'Un détail étrange attire votre attention.'}</p><div class="choice-grid">${choices.map(item=>`<button class="choice-button" data-discovery-zone="${zone.id}" data-discovery-choice="${item.id}" ${Object.entries(item.cost).some(([key,amount])=>(state[key]||0)<amount)?'disabled':''}><strong>${item.name}</strong><span>${item.copy}</span><small>${Object.entries(item.cost).map(([key,amount])=>`<span title="Coût exact : ${formatAmount(amount)} ${key==='insight'?'intuition':'marées'}">${format(amount,true)} ${key==='insight'?'intuition':'marées'}</span>`).join(' · ')}</small></button>`).join('')}</div>`;
+    const content=locked?`<p>${zone.copy} Les routes et découvertes de l’Archipel s’ouvriront à l’ère III.</p>`:`<p>${zone.copy}</p>${routeChoices}${discoveryContent}`;
+    return `<details class="panel-card exploration-card owned-territory" data-era-details="territory:${zone.id}" data-territory="${zone.id}" ${pending?'open':''}><summary data-era-summary="territory:${zone.id}">${summary}</summary><div class="territory-content">${content}</div></details>`;
   }).join('');
-  const html=`${gate}<article class="route-card era-map"><div><span class="eyebrow">CARTE DES OCÉANS</span><strong>${state.territories.length} / ${TERRITORIES.length} territoires</strong></div><div class="conquest-route">${TERRITORIES.map((zone,index)=>`<div class="route-stop era-island ${state.territories.includes(zone.id)?'claimed':index===state.territories.length?'current':''}"><span>${state.territories.includes(zone.id)?'✓':zone.icon}</span><small>${zone.name}</small></div>`).join('')}</div></article>${cards}`;
+
+  const futureZones=next?TERRITORIES.slice(TERRITORIES.indexOf(next)+(locked?0:1)):[];
+  const future=futureZones.length?`<details class="panel-card future-frontiers" data-era-details="future-frontiers"><summary data-era-summary="future-frontiers">À découvrir · ${futureZones.length}</summary><div class="era-grid">${futureZones.map(zone=>`<div class="era-island"><strong>${zone.icon} ${zone.name}</strong><small>Après l’escale actuelle · seuil ${format(zone.unlock,true)} lueurs produites <span title="Seuil exact : ${formatAmount(zone.unlock)}">ⓘ</span></small></div>`).join('')}</div></details>`:'';
+  const map=`<article class="route-card era-map"><div><span class="eyebrow">CARTE DES OCÉANS</span><strong>${state.territories.length} / ${TERRITORIES.length} territoires possédés</strong></div><div class="conquest-route">${TERRITORIES.map((zone,index)=>`<div class="route-stop era-island ${state.territories.includes(zone.id)?'claimed':index===state.territories.length?'current':''}"><span>${state.territories.includes(zone.id)?'✓':zone.icon}</span><small>${zone.name}</small></div>`).join('')}</div></article>`;
+  const html=`${gate}${map}${frontier}${ownedCards}${future}`;
   updateEraPanel(target,html);
   renderJournal();
-  $$('[data-prepare]').forEach(button=>button.onclick=()=>prepareColony(button.dataset.prepare));
-  $$('[data-settle]').forEach(button=>button.onclick=()=>establishColony(button.dataset.settle));
-  $$('[data-route-zone]').forEach(button=>button.onclick=()=>connectRoute(button.dataset.routeZone,button.dataset.routeMode));
-  $$('[data-discovery-zone]').forEach(button=>button.onclick=()=>selectDiscovery(button.dataset.discoveryZone,button.dataset.discoveryChoice));
+  target.querySelectorAll('[data-prepare]').forEach(button=>button.onclick=()=>prepareColony(button.dataset.prepare));
+  target.querySelectorAll('[data-settle]').forEach(button=>button.onclick=()=>establishColony(button.dataset.settle));
+  target.querySelectorAll('[data-route-zone]').forEach(button=>button.onclick=()=>connectRoute(button.dataset.routeZone,button.dataset.routeMode));
+  target.querySelectorAll('[data-discovery-zone]').forEach(button=>button.onclick=()=>selectDiscovery(button.dataset.discoveryZone,button.dataset.discoveryChoice));
   return target.innerHTML;
 }
